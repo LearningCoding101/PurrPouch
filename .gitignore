@@ -1,0 +1,94 @@
+# Compiled class file
+*.class
+
+# Log file
+*.log
+
+# BlueJ files
+*.ctxt
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+application.properties
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+replay_pid*
+# Spring Boot backend specific
+/Backend/target/
+/Backend/.mvn/
+/Backend/mvn*
+/Backend/*.log
+/Backend/.env
+/Backend/src/main/resources/application-*.properties
+/Backend/src/main/resources/application-*.yml
+/Backend/src/main/resources/application-*.yaml
+!/Backend/src/main/resources/application.properties
+!/Backend/src/main/resources/application.yml
+!/Backend/src/main/resources/application.yaml
+
+# Vite React frontend specific
+/FE/node_modules/
+/FE/dist/
+/FE/dist-ssr/
+/FE/.env
+/FE/.env.*
+/FE/*.local
+/FE/coverage/
+
+# IDE specific files
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.project
+.classpath
+.settings/
+.factorypath
+
+# OS specific files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# Misc
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+Backend/src/main/resources/application.properties
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+replay_pid*
+Backend/src/main/resources/firebase-service-account.json

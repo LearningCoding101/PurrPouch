@@ -1,11 +1,15 @@
-// filepath: d:\projects\purr_pouch\Backend\src\main\java\com\purrpouch\backend\security\WebSecurityConfig.java
 package com.purrpouch.backend.security;
 
 import com.purrpouch.backend.security.firebase.FirebaseAuthenticationFilter;
 import com.purrpouch.backend.security.jwt.AuthEntryPointJwt;
+import com.purrpouch.backend.security.jwt.JwtAuthenticationFilter;
+import com.purrpouch.backend.security.services.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -31,6 +35,29 @@ public class WebSecurityConfig {
 
     @Autowired
     private FirebaseAuthenticationFilter firebaseAuthenticationFilter;
+    
+    @Autowired
+    private UserDetailsServiceImpl userDetailsService;
+    
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter() {
+        return new JwtAuthenticationFilter();
+    }
+    
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        
+        authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+        
+        return authProvider;
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
+        return authConfig.getAuthenticationManager();
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -60,6 +87,11 @@ public class WebSecurityConfig {
                         .anyRequest().authenticated())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()));
 
+        http.authenticationProvider(authenticationProvider());
+        
+        // Add JWT filter
+        http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+        
         // Add Firebase authentication filter
         http.addFilterBefore(firebaseAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

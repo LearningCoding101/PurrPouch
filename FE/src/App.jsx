@@ -1,35 +1,97 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import Register from "./component/register";
+import Dashboard from "./component/dashboard";
+import Login from "./component/login";
+import Homepage from "./page/homepage";
+import { AuthProvider } from "./provider/auth_provider";
+import {
+  AuthGuard,
+  AdminGuard,
+  StaffGuard,
+  CustomerGuard,
+  GuestGuard,
+} from "./services/routing";
+// Header and Footer are now used in the PageWrapper component
+import FontStyles from "./theme/FontStyles";
+import LogoExamplePage from "./page/LogoExamplePage";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const AdminPanel = () => (
+    <div style={{ padding: "20px", textAlign: "center" }}>
+      Admin Role Access Only
+    </div>
+  );
+  const StaffPanel = () => (
+    <div style={{ padding: "20px", textAlign: "center" }}>
+      Staff Role Access Only
+    </div>
+  );
+  const CustomerPanel = () => (
+    <div style={{ padding: "20px", textAlign: "center" }}>
+      Customer Role Access Only
+    </div>
+  );
+  const Unauthorized = () => (
+    <div style={{ padding: "20px", textAlign: "center" }}>
+      <h2>Unauthorized Access</h2>
+      <p>You don't have permission to access this page.</p>
+    </div>
+  );
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <AuthProvider>
+      <Router>
+        <FontStyles />
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            minHeight: "100vh",
+          }}
+        >
+          <Routes>
+            {/* Public routes - Unauthenticated/Guest users */}
+            <Route path="/" element={<Homepage />} />
+            <Route path="/sample" element={<LogoExamplePage />} />
+
+            <Route element={<GuestGuard />}>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+            </Route>
+
+            {/* Protected routes for any authenticated user */}
+            <Route element={<AuthGuard />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+            </Route>
+
+            {/* Customer routes - customer, staff, and admin can access */}
+            <Route element={<CustomerGuard />}>
+              <Route path="/customer" element={<CustomerPanel />} />
+            </Route>
+
+            {/* Admin only routes */}
+            <Route element={<AdminGuard />}>
+              <Route path="/admin" element={<AdminPanel />} />
+            </Route>
+
+            {/* Staff and Admin routes */}
+            <Route element={<StaffGuard />}>
+              <Route path="/staff" element={<StaffPanel />} />
+            </Route>
+
+            {/* Utility routes */}
+            <Route path="/unauthorized" element={<Unauthorized />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </div>
+      </Router>
+    </AuthProvider>
+  );
 }
 
-export default App
+export default App;

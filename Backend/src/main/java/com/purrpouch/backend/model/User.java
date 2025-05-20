@@ -29,10 +29,8 @@ public class User {
     private String password;
 
     @Column(unique = true)
-    private String firebaseUid;
-
-    @Enumerated(EnumType.STRING)
-    private Role role = Role.USER; // Default role
+    private String firebaseUid;    @Enumerated(EnumType.STRING)
+    private Role role = Role.CUSTOMER; // Default role is now CUSTOMER
 
     private boolean enabled = true;
 
@@ -51,6 +49,7 @@ public class User {
 
     public enum Role {
         USER,
+        CUSTOMER,
         STAFF,
         ADMIN
     }

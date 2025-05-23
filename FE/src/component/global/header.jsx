@@ -1,9 +1,24 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { splineTheme } from "../../theme/global_theme";
 import Logo from "./Logo";
+import { useAuth } from "../../provider/auth_provider";
+import { auth } from "../../firebase";
+import { signOut } from "firebase/auth";
 
 function Header() {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      localStorage.removeItem("token");
+      navigate("/login");
+    } catch (err) {
+      console.error("Sign out failed:", err);
+    }
+  };
   return (
     <header
       style={{
@@ -37,8 +52,12 @@ function Header() {
             fontFamily: splineTheme.typography.fontFamily.heading,
           }}
         >
+          {" "}
           <div>
-            <Link to="/" style={{ color: "black", textDecoration: "none" }}>
+            <Link
+              to="/about-us"
+              style={{ color: "black", textDecoration: "none" }}
+            >
               About us
             </Link>
           </div>
@@ -49,10 +68,10 @@ function Header() {
             >
               Menu
             </Link>
-          </div>
+          </div>{" "}
           <div>
             <Link
-              to="/services"
+              to="/cat-profile"
               style={{ color: "black", textDecoration: "none" }}
             >
               Cat Profile
@@ -135,22 +154,41 @@ function Header() {
                 <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
               </svg>
             </Link>
-          </div>
+          </div>{" "}
           <div>
-            <Link
-              to="/login"
-              style={{
-                backgroundColor: "#5A87C5",
-                color: "white",
-                textDecoration: "none",
-                padding: "8px 16px",
-                borderRadius: "4px",
-                fontWeight: "500",
-                fontFamily: splineTheme.typography.fontFamily.body,
-              }}
-            >
-              Sign in
-            </Link>
+            {isAuthenticated ? (
+              <button
+                onClick={handleSignOut}
+                style={{
+                  backgroundColor: "#E74C3C",
+                  color: "white",
+                  textDecoration: "none",
+                  padding: "8px 16px",
+                  borderRadius: "4px",
+                  fontWeight: "500",
+                  fontFamily: splineTheme.typography.fontFamily.body,
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                Sign out
+              </button>
+            ) : (
+              <Link
+                to="/login"
+                style={{
+                  backgroundColor: "#5A87C5",
+                  color: "white",
+                  textDecoration: "none",
+                  padding: "8px 16px",
+                  borderRadius: "4px",
+                  fontWeight: "500",
+                  fontFamily: splineTheme.typography.fontFamily.body,
+                }}
+              >
+                Sign in
+              </Link>
+            )}
           </div>
         </div>
       </div>

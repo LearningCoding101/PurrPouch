@@ -19,6 +19,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Authentication services
 export const login = (email, password) => {
   return api.post("/auth/signin", { email, password });
 };
@@ -39,6 +40,43 @@ export const loginWithGoogle = (idToken) => {
       headers: { Authorization: `Bearer ${idToken}` },
     }
   );
+};
+
+// Image upload service
+export const uploadImage = async (imageBase64) => {
+  try {
+    const apiKey = import.meta.env.VITE_IMGBB_API_KEY;
+
+    // Remove the data:image/jpeg;base64, part if present
+    const base64Image = imageBase64.split(",")[1] || imageBase64;
+
+    const formData = new FormData();
+    formData.append("image", base64Image);
+
+    const response = await axios.post(
+      `https://api.imgbb.com/1/upload?key=${apiKey}`,
+      formData
+    );
+
+    if (response.data.success) {
+      return {
+        success: true,
+        url: response.data.data.url,
+        data: response.data.data,
+      };
+    } else {
+      return {
+        success: false,
+        error: response.data.error,
+      };
+    }
+  } catch (error) {
+    console.error("Error uploading image:", error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
 };
 
 export default api;

@@ -8,6 +8,8 @@ import Register from "./component/register";
 import Dashboard from "./component/dashboard";
 import Login from "./component/login";
 import Homepage from "./page/homepage";
+import CatProfile from "./page/CatProfile";
+import AboutUs from "./page/AboutUs";
 import { AuthProvider } from "./provider/auth_provider";
 import {
   AuthGuard,
@@ -58,6 +60,8 @@ function App() {
             {/* Public routes - Unauthenticated/Guest users */}
             <Route path="/" element={<Homepage />} />
             <Route path="/sample" element={<LogoExamplePage />} />
+            <Route path="/cat-profile" element={<CatProfile />} />
+            <Route path="/about-us" element={<AboutUs />} />
 
             <Route element={<GuestGuard />}>
               <Route path="/login" element={<Login />} />

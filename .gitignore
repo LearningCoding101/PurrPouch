@@ -92,3 +92,4 @@ Backend/src/main/resources/application.properties
 hs_err_pid*
 replay_pid*
 Backend/src/main/resources/firebase-service-account.json
+FE/src/firebase.js

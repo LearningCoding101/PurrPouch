@@ -22,12 +22,18 @@ function Register() {
 
     setLoading(true);
     setError("");
-
     try {
       await register(username, email, password);
-      navigate("/login");
+      navigate("/login", {
+        state: {
+          message:
+            "Registration successful! Please login with your credentials.",
+        },
+      });
     } catch (err) {
-      setError(err.response?.data?.message || "Registration failed");
+      setError(
+        err.response?.data?.message || "Registration failed. Please try again."
+      );
     } finally {
       setLoading(false);
     }

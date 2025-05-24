@@ -35,9 +35,9 @@ export const getUserInfo = () => {
 export const loginWithGoogle = (idToken) => {
   return api.post(
     "/auth/google-auth",
-    {},
+    { idToken }, // Include the token in the request body
     {
-      headers: { Authorization: `Bearer ${idToken}` },
+      headers: { Authorization: `Bearer ${idToken}` }, // Also include in the Authorization header
     }
   );
 };

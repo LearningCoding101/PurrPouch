@@ -1,5 +1,7 @@
 package com.purrpouch.backend.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.purrpouch.backend.model.User;
 import com.purrpouch.backend.payload.request.RoleUpdateRequest;
@@ -16,8 +18,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.validation.annotation.Validated;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseToken;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -34,6 +45,40 @@ public class AuthController {
     public ResponseEntity<?> getUserInfo() {
         User user = authService.getCurrentUser();
         return ResponseEntity.ok(user);
+    }
+
+    @GetMapping("/debug-token")
+    public ResponseEntity<?> debugToken(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        Map<String, Object> response = new HashMap<>();
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            response.put("error", "No valid Authorization header found");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        String token = authHeader.substring(7);
+        response.put("token_received", token.substring(0, Math.min(10, token.length())) + "...");
+
+        try {
+            boolean isValid = jwtUtils.validateJwtToken(token);
+            response.put("is_valid", isValid);
+
+            if (isValid) {
+                try {
+                    String email = jwtUtils.getEmailFromJwtToken(token);
+                    response.put("email", email);
+                } catch (Exception e) {
+                    response.put("email_extraction_error", e.getMessage());
+                }
+
+                Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
+                response.put("current_auth", currentAuth != null ? currentAuth.getName() : "none");
+            }
+        } catch (Exception e) {
+            response.put("validation_error", e.getMessage());
+        }
+
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/signin")
@@ -79,14 +124,41 @@ public class AuthController {
     }
 
     @PostMapping("/google-auth")
-    public ResponseEntity<?> authenticateWithGoogle(@RequestHeader("Authorization") String idToken) {
+    public ResponseEntity<?> authenticateWithGoogle(@RequestBody Map<String, String> request,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
         try {
-            // User is authenticated by FirebaseAuthenticationFilter and available in
-            // SecurityContextHolder
-            User user = authService.getCurrentUser();
+            // Get the idToken directly from the request body
+            String idToken = request.get("idToken");
 
-            // Generate our own JWT token instead of using Firebase token
-            String jwt = jwtUtils.generateTokenFromEmail(user.getEmail());
+            // If not in request body, try to get from Authorization header
+            if ((idToken == null || idToken.isEmpty()) && authHeader != null && authHeader.startsWith("Bearer ")) {
+                idToken = authHeader.substring(7);
+            }
+
+            if (idToken == null || idToken.isEmpty()) {
+                return ResponseEntity.badRequest().body(new MessageResponse("No ID token provided"));
+            }
+
+            // Verify the Firebase ID token directly
+            FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
+            String uid = decodedToken.getUid();
+            String email = decodedToken.getEmail();
+            String name = decodedToken.getName();
+            String picture = decodedToken.getPicture();
+
+            // Register or update the user in our system
+            User user = authService.registerGoogleUser(uid, email, name, picture);
+
+            // Create authentication with authorities - use the user object directly as
+            // principal
+            Authentication authentication = new UsernamePasswordAuthenticationToken(
+                    user, null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())));
+
+            // Set authentication in context
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            // Generate JWT for our system
+            String jwt = jwtUtils.generateJwtToken(authentication);
 
             return ResponseEntity.ok(new JwtResponse(
                     jwt,
@@ -94,8 +166,12 @@ public class AuthController {
                     user.getUsername(),
                     user.getEmail(),
                     user.getRole().name()));
+        } catch (FirebaseAuthException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new MessageResponse("Invalid ID token: " + e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Authentication failed: " + e.getMessage()));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MessageResponse("Error during authentication: " + e.getMessage()));
         }
     }
 }

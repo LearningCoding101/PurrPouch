@@ -23,16 +23,22 @@ public class JwtUtils {
     private int jwtExpirationMs;
 
     public String generateJwtToken(Authentication authentication) {
+
         User userPrincipal = (User) authentication.getPrincipal();
 
         return generateTokenFromEmail(userPrincipal.getEmail());
+
     }
 
     public String generateTokenFromEmail(String email) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
+        logger.debug("Generating token for email: {}, expires at: {}", email, expiryDate);
+
         return Jwts.builder()
                 .setSubject(email)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
                 .signWith(key(), SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -52,7 +58,25 @@ public class JwtUtils {
 
     public boolean validateJwtToken(String authToken) {
         try {
-            Jwts.parserBuilder().setSigningKey(key()).build().parseClaimsJws(authToken);
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(key())
+                    .build()
+                    .parseClaimsJws(authToken)
+                    .getBody();
+
+            // Log token information
+            Date issuedAt = claims.getIssuedAt();
+            Date expiration = claims.getExpiration();
+            Date now = new Date();
+
+            logger.debug("JWT Token validation - Subject: {}, IssuedAt: {}, Expiration: {}, Current time: {}",
+                    claims.getSubject(), issuedAt, expiration, now);
+
+            if (expiration != null && expiration.before(now)) {
+                logger.warn("JWT Token is expired! Expiration: {}, Current time: {}", expiration, now);
+                return false;
+            }
+
             return true;
         } catch (MalformedJwtException e) {
             logger.error("Invalid JWT token: {}", e.getMessage());
@@ -62,6 +86,8 @@ public class JwtUtils {
             logger.error("JWT token is unsupported: {}", e.getMessage());
         } catch (IllegalArgumentException e) {
             logger.error("JWT claims string is empty: {}", e.getMessage());
+        } catch (Exception e) {
+            logger.error("Unexpected error during JWT validation: {}", e.getMessage(), e);
         }
 
         return false;

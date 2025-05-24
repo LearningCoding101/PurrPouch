@@ -5,6 +5,8 @@ import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.UserRecord;
 import com.purrpouch.backend.model.User;
 import com.purrpouch.backend.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,6 +22,8 @@ import java.util.Optional;
 @Transactional
 public class AuthService {
 
+    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
+
     @Autowired
     private UserRepository userRepository;
 
@@ -31,7 +35,49 @@ public class AuthService {
 
     public User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return (User) authentication.getPrincipal();
+
+        // Log authentication details for debugging
+        if (authentication != null) {
+            logger.debug("Authentication found - Name: {}, Principal type: {}, IsAuthenticated: {}",
+                    authentication.getName(),
+                    authentication.getPrincipal() != null ? authentication.getPrincipal().getClass().getName() : "null",
+                    authentication.isAuthenticated());
+        } else {
+            logger.debug("No authentication found in SecurityContext");
+        }
+
+        // Check if authentication exists and is authenticated
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new IllegalStateException("No authenticated user found");
+        }
+
+        Object principal = authentication.getPrincipal();
+
+        // Check for anonymousUser in all possible forms
+        if (principal instanceof String && "anonymousUser".equals(principal)) {
+            throw new IllegalStateException("No authenticated user found - anonymousUser detected");
+        }
+
+        if (principal instanceof User) {
+            logger.debug("Returning User principal: {}", ((User) principal).getEmail());
+            return (User) principal;
+        } else if (principal instanceof String) {
+            // Handle the case when principal is a String (email)
+            String email = (String) principal;
+            logger.debug("Principal is String (email): {}, looking up user", email);
+            return userRepository.findByEmail(email)
+                    .orElseThrow(() -> new IllegalStateException("User not found with email: " + email));
+        } else if (principal instanceof org.springframework.security.core.userdetails.User) {
+            // Handle Spring Security User - this shouldn't happen anymore with our updated
+            // filters
+            String email = ((org.springframework.security.core.userdetails.User) principal).getUsername();
+            logger.debug("Principal is Spring Security UserDetails: {}, looking up user", email);
+            return userRepository.findByEmail(email)
+                    .orElseThrow(() -> new IllegalStateException("User not found with email: " + email));
+        }
+
+        throw new IllegalStateException(
+                "Unknown principal type: " + (principal != null ? principal.getClass().getName() : "null"));
     }
 
     public Authentication authenticate(String email, String password) {

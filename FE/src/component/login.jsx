@@ -66,23 +66,40 @@ function Login() {
     try {
       // Sign in with Google
       const result = await signInWithPopup(auth, googleProvider);
-      const idToken = await getIdToken(result.user); // Authenticate with backend
-      const response = await loginWithGoogle(idToken);
-      localStorage.setItem("token", response.data.token); // Store the backend token instead of Firebase token
+      const idToken = await getIdToken(result.user);
 
-      // Get user info to set role
-      const userInfo = await getUserInfo();
-      setUserRole(userInfo.data.role);
+      console.log("Google Auth successful, got token", {
+        length: idToken.length,
+      });
 
-      // Redirect based on role
-      if (userInfo.data.role === "USER") {
-        navigate("/"); // Redirect to homepage for regular users
-      } else {
-        navigate("/dashboard"); // Redirect to dashboard for other roles
+      try {
+        // Authenticate with backend
+        const response = await loginWithGoogle(idToken);
+        localStorage.setItem("token", response.data.token); // Store the backend token
+
+        // Get user info to set role
+        const userInfo = await getUserInfo();
+        setUserRole(userInfo.data.role);
+
+        // Redirect based on role
+        if (userInfo.data.role === "USER") {
+          navigate("/"); // Redirect to homepage for regular users
+        } else {
+          navigate("/dashboard"); // Redirect to dashboard for other roles
+        }
+      } catch (backendError) {
+        console.error("Backend authentication failed:", backendError);
+        setError(
+          backendError.response?.data?.message ||
+            "Backend authentication failed"
+        );
       }
-    } catch (err) {
-      setError("Google authentication failed");
-      console.error(err);
+    } catch (firebaseError) {
+      console.error("Google Firebase auth failed:", firebaseError);
+      setError(
+        "Google authentication failed: " +
+          (firebaseError.message || "Unknown error")
+      );
     } finally {
       setLoading(false);
     }

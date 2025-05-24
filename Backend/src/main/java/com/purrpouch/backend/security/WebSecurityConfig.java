@@ -35,22 +35,22 @@ public class WebSecurityConfig {
 
     @Autowired
     private FirebaseAuthenticationFilter firebaseAuthenticationFilter;
-    
+
     @Autowired
     private UserDetailsServiceImpl userDetailsService;
-    
+
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
         return new JwtAuthenticationFilter();
     }
-    
+
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        
+
         authProvider.setUserDetailsService(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
-        
+
         return authProvider;
     }
 
@@ -81,19 +81,19 @@ public class WebSecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/test/**").permitAll()
                         .anyRequest().authenticated())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()));
-
         http.authenticationProvider(authenticationProvider());
-        
-        // Add JWT filter
+
+        // Add JWT filter first - it handles our app's JWT tokens
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
-        
-        // Add Firebase authentication filter
-        http.addFilterBefore(firebaseAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+        // Add Firebase authentication filter after JWT filter - it handles direct
+        // Firebase ID tokens
+        http.addFilterAfter(firebaseAuthenticationFilter, JwtAuthenticationFilter.class);
 
         return http.build();
     }

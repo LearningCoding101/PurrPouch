@@ -1,6 +1,7 @@
 package com.purrpouch.backend.security.jwt;
 
-import com.purrpouch.backend.security.services.UserDetailsServiceImpl;
+import com.purrpouch.backend.model.User;
+import com.purrpouch.backend.repository.UserRepository;
 import com.purrpouch.backend.util.JwtUtils;
 
 import jakarta.servlet.FilterChain;
@@ -11,13 +12,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Optional;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -27,7 +30,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private JwtUtils jwtUtils;
 
     @Autowired
-    private UserDetailsServiceImpl userDetailsService;
+    private UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -36,15 +39,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String jwt = parseJwt(request);
             if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
                 String email = jwtUtils.getEmailFromJwtToken(jwt);
+                logger.debug("JWT validated for email: {}", email);
 
-                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities());
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                // Load our custom User entity instead of UserDetails
+                Optional<User> userOptional = userRepository.findByEmail(email);
+                if (userOptional.isPresent()) {
+                    User user = userOptional.get();
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            user, // Use our custom User object as principal
+                            null,
+                            Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())));
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    logger.debug("JWT authentication successful for user: {}, Principal type: {}",
+                            user.getEmail(), user.getClass().getName());
+                } else {
+                    logger.warn("User not found for email: {}", email);
+                }
             }
         } catch (Exception e) {
             logger.error("Cannot set user authentication: {}", e.getMessage());

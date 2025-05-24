@@ -289,8 +289,10 @@ function CatProfileDetail() {
                         width: "150px",
                         backgroundColor: "#dce6f5",
                         padding: "0.75rem 1rem",
-                        borderRadius: "10px 0 0 10px",
                         color: "#1d3557",
+                        marginRight: "10px",
+                        borderRadius: "10px  10px 10px 10px",
+
                         fontWeight: "600",
                         fontFamily: splineTheme.typography.fontFamily.body,
                         display: "flex",
@@ -304,8 +306,10 @@ function CatProfileDetail() {
                         flex: "1",
                         backgroundColor: "#fbe7e7",
                         padding: "0.75rem 1rem",
-                        borderRadius: "0 10px 10px 0",
                         color: "#1d3557",
+                        marginRight: "10px",
+                        borderRadius: "10px  10px 10px 10px",
+
                         fontFamily: splineTheme.typography.fontFamily.body,
                       }}
                     >
@@ -320,8 +324,10 @@ function CatProfileDetail() {
                         width: "150px",
                         backgroundColor: "#dce6f5",
                         padding: "0.75rem 1rem",
-                        borderRadius: "10px 0 0 10px",
                         color: "#1d3557",
+                        marginRight: "10px",
+                        borderRadius: "10px  10px 10px 10px",
+
                         fontWeight: "600",
                         fontFamily: splineTheme.typography.fontFamily.body,
                         display: "flex",
@@ -335,8 +341,10 @@ function CatProfileDetail() {
                         flex: "1",
                         backgroundColor: "#fbe7e7",
                         padding: "0.75rem 1rem",
-                        borderRadius: "0 10px 10px 0",
                         color: "#1d3557",
+                        marginRight: "10px",
+                        borderRadius: "10px  10px 10px 10px",
+
                         fontFamily: splineTheme.typography.fontFamily.body,
                       }}
                     >
@@ -350,8 +358,10 @@ function CatProfileDetail() {
                         width: "150px",
                         backgroundColor: "#dce6f5",
                         padding: "0.75rem 1rem",
-                        borderRadius: "10px 0 0 10px",
                         color: "#1d3557",
+                        marginRight: "10px",
+                        borderRadius: "10px  10px 10px 10px",
+
                         fontWeight: "600",
                         fontFamily: splineTheme.typography.fontFamily.body,
                         display: "flex",
@@ -365,8 +375,10 @@ function CatProfileDetail() {
                         flex: "1",
                         backgroundColor: "#fbe7e7",
                         padding: "0.75rem 1rem",
-                        borderRadius: "0 10px 10px 0",
                         color: "#1d3557",
+                        marginRight: "10px",
+                        borderRadius: "10px  10px 10px 10px",
+
                         fontFamily: splineTheme.typography.fontFamily.body,
                       }}
                     >
@@ -380,8 +392,10 @@ function CatProfileDetail() {
                         width: "150px",
                         backgroundColor: "#dce6f5",
                         padding: "0.75rem 1rem",
-                        borderRadius: "10px 0 0 10px",
                         color: "#1d3557",
+                        marginRight: "10px",
+                        borderRadius: "10px  10px 10px 10px",
+
                         fontWeight: "600",
                         fontFamily: splineTheme.typography.fontFamily.body,
                         display: "flex",
@@ -395,8 +409,10 @@ function CatProfileDetail() {
                         flex: "1",
                         backgroundColor: "#fbe7e7",
                         padding: "0.75rem 1rem",
-                        borderRadius: "0 10px 10px 0",
                         color: "#1d3557",
+                        marginRight: "10px",
+                        borderRadius: "10px  10px 10px 10px",
+
                         fontFamily: splineTheme.typography.fontFamily.body,
                       }}
                     >

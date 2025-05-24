@@ -8,7 +8,6 @@ import lombok.Setter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-
 @Entity
 @Table(name = "cat_profiles")
 @Getter
@@ -53,6 +52,10 @@ public class CatProfile {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    // Add this field to store the photo URL
+    @Column(columnDefinition = "TEXT")
+    private String photoUrl;
+
     private LocalDate birthDate;
 
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -83,6 +86,7 @@ public class CatProfile {
         this.updatedAt = LocalDateTime.now();
     }
 
+    // Rest of the class remains unchanged
     public enum ProteinType {
         CHICKEN,
         TURKEY,

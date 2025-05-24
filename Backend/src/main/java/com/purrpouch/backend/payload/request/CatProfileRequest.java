@@ -11,10 +11,10 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 import java.util.List;
-
 @Getter
 @Setter
 public class CatProfileRequest {
+    // Existing fields
     @NotBlank(message = "Cat name is required")
     private String name;
     
@@ -32,6 +32,9 @@ public class CatProfileRequest {
     private List<Allergy> allergies;
     
     private String notes;
+    
+    // Add this field
+    private String photoUrl;
     
     @Past(message = "Birth date must be in the past")
     private LocalDate birthDate;

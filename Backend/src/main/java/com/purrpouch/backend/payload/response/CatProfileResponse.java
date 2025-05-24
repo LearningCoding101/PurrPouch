@@ -10,10 +10,10 @@ import lombok.Setter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-
 @Getter
 @Setter
 public class CatProfileResponse {
+    // Existing fields
     private Long id;
     private String name;
     private String breed;
@@ -23,6 +23,8 @@ public class CatProfileResponse {
     private List<DietaryRequirement> dietaryRequirements;
     private List<Allergy> allergies;
     private String notes;
+    // Add this field
+    private String photoUrl;
     private LocalDate birthDate;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -38,6 +40,8 @@ public class CatProfileResponse {
         response.setDietaryRequirements(catProfile.getDietaryRequirements());
         response.setAllergies(catProfile.getAllergies());
         response.setNotes(catProfile.getNotes());
+        // Set the photo URL
+        response.setPhotoUrl(catProfile.getPhotoUrl());
         response.setBirthDate(catProfile.getBirthDate());
         response.setCreatedAt(catProfile.getCreatedAt());
         response.setUpdatedAt(catProfile.getUpdatedAt());

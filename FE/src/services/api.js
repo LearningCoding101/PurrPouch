@@ -79,4 +79,29 @@ export const uploadImage = async (imageBase64) => {
   }
 };
 
+// Cat profile services
+export const getCatProfiles = () => {
+  return api.get("/cat-profiles");
+};
+
+export const getCatProfile = (id) => {
+  return api.get(`/cat-profiles/${id}`);
+};
+
+export const getCatProfileById = (id) => {
+  return api.get(`/cat-profiles/${id}`);
+};
+
+export const createCatProfile = (profileData) => {
+  return api.post("/cat-profiles", profileData);
+};
+
+export const updateCatProfile = (id, profileData) => {
+  return api.put(`/cat-profiles/${id}`, profileData);
+};
+
+export const deleteCatProfile = (id) => {
+  return api.delete(`/cat-profiles/${id}`);
+};
+
 export default api;

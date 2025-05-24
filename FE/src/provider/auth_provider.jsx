@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }) => {
     setUserRole,
     isAdmin: userRole === "ADMIN",
     isStaff: userRole === "STAFF" || userRole === "ADMIN",
-    isCustomer: userRole === "CUSTOMER",
+    isCustomer: userRole === "USER" || userRole === "CUSTOMER",
     isUser: userRole === "USER" || userRole === "CUSTOMER", // Backward compatibility
     isAuthenticated: !!currentUser && !!localStorage.getItem("token"),
     loading,

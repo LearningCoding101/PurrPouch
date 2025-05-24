@@ -9,6 +9,8 @@ import Dashboard from "./component/dashboard";
 import Login from "./component/login";
 import Homepage from "./page/homepage";
 import CatProfile from "./page/CatProfile";
+import CatProfileRouter from "./page/CatProfileRouter";
+import CatProfileDetail from "./page/CatProfileDetail";
 import AboutUs from "./page/AboutUs";
 import { AuthProvider } from "./provider/auth_provider";
 import {
@@ -60,7 +62,7 @@ function App() {
             {/* Public routes - Unauthenticated/Guest users */}
             <Route path="/" element={<Homepage />} />
             <Route path="/sample" element={<LogoExamplePage />} />
-            <Route path="/cat-profile" element={<CatProfile />} />
+
             <Route path="/about-us" element={<AboutUs />} />
 
             <Route element={<GuestGuard />}>
@@ -75,6 +77,9 @@ function App() {
 
             {/* Customer routes - customer, staff, and admin can access */}
             <Route element={<CustomerGuard />}>
+              <Route path="/cat-profile" element={<CatProfileRouter />} />
+              <Route path="/cat-profile-create" element={<CatProfile />} />
+              <Route path="/cat-profile/:id" element={<CatProfileDetail />} />
               <Route path="/customer" element={<CustomerPanel />} />
             </Route>
 

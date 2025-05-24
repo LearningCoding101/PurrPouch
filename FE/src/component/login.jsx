@@ -66,11 +66,9 @@ function Login() {
     try {
       // Sign in with Google
       const result = await signInWithPopup(auth, googleProvider);
-      const idToken = await getIdToken(result.user);
-
-      // Authenticate with backend
+      const idToken = await getIdToken(result.user); // Authenticate with backend
       const response = await loginWithGoogle(idToken);
-      localStorage.setItem("token", idToken);
+      localStorage.setItem("token", response.data.token); // Store the backend token instead of Firebase token
 
       // Get user info to set role
       const userInfo = await getUserInfo();

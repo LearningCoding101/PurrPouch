@@ -22,7 +22,7 @@ public class CatProfileController {
 
     @Autowired
     private CatProfileService catProfileService;
-    
+
     @GetMapping
     public ResponseEntity<List<CatProfileResponse>> getAllCatProfiles() {
         List<CatProfileResponse> catProfiles = catProfileService.getCurrentUserCatProfiles()
@@ -31,7 +31,7 @@ public class CatProfileController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(catProfiles);
     }
-    
+
     @GetMapping("/{id}")
     public ResponseEntity<?> getCatProfileById(@PathVariable Long id) {
         try {
@@ -42,7 +42,7 @@ public class CatProfileController {
                     .body(new MessageResponse(e.getMessage()));
         }
     }
-    
+
     @PostMapping
     public ResponseEntity<?> createCatProfile(@Valid @RequestBody CatProfileRequest request) {
         try {
@@ -56,7 +56,9 @@ public class CatProfileController {
             catProfile.setAllergies(request.getAllergies());
             catProfile.setNotes(request.getNotes());
             catProfile.setBirthDate(request.getBirthDate());
-            
+            // Add this line to set the photo URL
+            catProfile.setPhotoUrl(request.getPhotoUrl());
+
             CatProfile createdProfile = catProfileService.createCatProfile(catProfile);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(CatProfileResponse.fromEntity(createdProfile));
@@ -64,7 +66,7 @@ public class CatProfileController {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
         }
     }
-    
+
     @PutMapping("/{id}")
     public ResponseEntity<?> updateCatProfile(
             @PathVariable Long id,
@@ -80,7 +82,9 @@ public class CatProfileController {
             catProfile.setAllergies(request.getAllergies());
             catProfile.setNotes(request.getNotes());
             catProfile.setBirthDate(request.getBirthDate());
-            
+            // Add this line to set the photo URL
+            catProfile.setPhotoUrl(request.getPhotoUrl());
+
             CatProfile updatedProfile = catProfileService.updateCatProfile(id, catProfile);
             return ResponseEntity.ok(CatProfileResponse.fromEntity(updatedProfile));
         } catch (EntityNotFoundException e) {
@@ -90,7 +94,7 @@ public class CatProfileController {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
         }
     }
-    
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteCatProfile(@PathVariable Long id) {
         try {
@@ -101,7 +105,7 @@ public class CatProfileController {
                     .body(new MessageResponse(e.getMessage()));
         }
     }
-    
+
     @PostMapping("/{id}/restore")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> restoreCatProfile(@PathVariable Long id) {

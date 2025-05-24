@@ -26,7 +26,7 @@ public class AuthController {
 
     @Autowired
     private AuthService authService;
-    
+
     @Autowired
     private JwtUtils jwtUtils;
 
@@ -35,32 +35,30 @@ public class AuthController {
         User user = authService.getCurrentUser();
         return ResponseEntity.ok(user);
     }
-    
+
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
         Authentication authentication = authService.authenticate(loginRequest.getEmail(), loginRequest.getPassword());
-        
+
         String jwt = jwtUtils.generateJwtToken(authentication);
         User user = (User) authentication.getPrincipal();
-        
+
         return ResponseEntity.ok(new JwtResponse(
                 jwt,
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
-                user.getRole().name()
-        ));
+                user.getRole().name()));
     }
-    
+
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signupRequest) {
         try {
             User user = authService.registerUser(
                     signupRequest.getUsername(),
                     signupRequest.getEmail(),
-                    signupRequest.getPassword()
-            );
-            
+                    signupRequest.getPassword());
+
             return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
@@ -79,11 +77,25 @@ public class AuthController {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
         }
     }
-    
+
     @PostMapping("/google-auth")
     public ResponseEntity<?> authenticateWithGoogle(@RequestHeader("Authorization") String idToken) {
-        // This endpoint is just a placeholder as authentication is handled by FirebaseAuthenticationFilter
-        // Just return current user info
-        return getUserInfo();
+        try {
+            // User is authenticated by FirebaseAuthenticationFilter and available in
+            // SecurityContextHolder
+            User user = authService.getCurrentUser();
+
+            // Generate our own JWT token instead of using Firebase token
+            String jwt = jwtUtils.generateTokenFromEmail(user.getEmail());
+
+            return ResponseEntity.ok(new JwtResponse(
+                    jwt,
+                    user.getId(),
+                    user.getUsername(),
+                    user.getEmail(),
+                    user.getRole().name()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Authentication failed: " + e.getMessage()));
+        }
     }
 }

@@ -1,12 +1,15 @@
 import React, { useState } from "react";
 import PageWrapper from "../component/global/PageWrapper";
 import { splineTheme } from "../theme/global_theme";
-import { uploadImage } from "../services/api";
+import { uploadImage, createCatProfile } from "../services/api";
+import { useNavigate } from "react-router-dom";
 
 // Using cat from existing resources as a temporary placeholder
 import catPaw from "../assets/image/homepage/cat_section1_2.png";
 
 function CatProfile() {
+  const navigate = useNavigate();
+
   // State for form values
   const [formData, setFormData] = useState({
     name: "",
@@ -15,13 +18,15 @@ function CatProfile() {
     age: "",
     proteinPreference: "",
     dietaryRequirements: [],
-    allergies: "",
+    allergies: [],
     notes: "",
     catPhoto: null,
   });
 
-  // Add loading state for image upload
+  // Add loading state for image upload and form submission
   const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
   // Handle input changes
   const handleInputChange = (e) => {
@@ -31,7 +36,6 @@ function CatProfile() {
       [name]: value,
     });
   };
-
   // Handle dietary requirements checkbox changes
   const handleDietaryChange = (requirement) => {
     if (formData.dietaryRequirements.includes(requirement)) {
@@ -49,6 +53,21 @@ function CatProfile() {
     }
   };
 
+  // Handle allergies checkbox changes
+  const handleAllergyChange = (allergy) => {
+    if (formData.allergies.includes(allergy)) {
+      setFormData({
+        ...formData,
+        allergies: formData.allergies.filter((item) => item !== allergy),
+      });
+    } else {
+      setFormData({
+        ...formData,
+        allergies: [...formData.allergies, allergy],
+      });
+    }
+  };
+
   // Function to upload image using our API service
   const uploadImageHandler = async (imageBase64) => {
     const result = await uploadImage(imageBase64);
@@ -60,90 +79,117 @@ function CatProfile() {
       return null;
     }
   };
-
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitError(null);
 
-    let submissionData = { ...formData };
+    try {
+      let submissionData = { ...formData };
 
-    // If there's a catPhoto, upload it to imgBB and replace with URL
-    if (formData.catPhoto) {
-      setIsUploading(true);
-      const imageUrl = await uploadImageHandler(formData.catPhoto);
-      if (imageUrl) {
-        submissionData.catPhoto = imageUrl;
+      // If there's a catPhoto, upload it to imgBB and replace with URL
+      if (formData.catPhoto) {
+        setIsUploading(true);
+        const imageUrl = await uploadImageHandler(formData.catPhoto);
+        if (imageUrl) {
+          submissionData.photoUrl = imageUrl; // Change key from catPhoto to photoUrl to match the backend
+        }
+        setIsUploading(false);
       }
-      setIsUploading(false);
+
+      // Prepare the data for the backend
+      const catProfileData = {
+        name: submissionData.name,
+        breed: submissionData.breed,
+        weight: parseFloat(submissionData.weight),
+        age: parseInt(submissionData.age, 10),
+        proteinPreferences: submissionData.proteinPreference
+          ? [submissionData.proteinPreference]
+          : [],
+        dietaryRequirements: submissionData.dietaryRequirements, // No transformation needed, already using correct enum values
+        allergies: submissionData.allergies, // Using the allergies array directly
+        notes: submissionData.notes,
+        photoUrl: submissionData.photoUrl || null,
+      };
+
+      console.log("Form Data to submit:", catProfileData);
+
+      // Send the data to the backend
+      setIsSubmitting(true);
+      const response = await createCatProfile(catProfileData);
+      setIsSubmitting(false);
+
+      console.log("Cat profile created successfully:", response.data);
+
+      // Navigate to the cat profiles list
+      navigate("/cat-profile");
+    } catch (error) {
+      setIsSubmitting(false);
+      console.error("Error creating cat profile:", error);
+      setSubmitError("Failed to create cat profile. Please try again.");
     }
-
-    console.log("Form Data to submit:", submissionData);
-    // Here you would typically send the data to a backend service
-  };
-  // Protein preferences options
+  }; // Protein preferences options
   const proteinOptions = [
-    { value: "chicken", label: "Chicken" },
-    { value: "turkey", label: "Turkey" },
-    { value: "salmon", label: "Salmon" },
-    { value: "beef", label: "Beef" },
-    { value: "tuna", label: "Tuna" },
-    { value: "duck", label: "Duck" },
-    { value: "whitefish", label: "Whitefish" },
-    { value: "plant", label: "Plant-based options" },
+    { value: "CHICKEN", label: "Chicken" },
+    { value: "TURKEY", label: "Turkey" },
+    { value: "SALMON", label: "Salmon" },
+    { value: "BEEF", label: "Beef" },
+    { value: "TUNA", label: "Tuna" },
+    { value: "DUCK", label: "Duck" },
+    { value: "WHITEFISH", label: "Whitefish" },
+    { value: "PLANT_BASED", label: "Plant-based options" },
   ];
-
   // Dietary requirements options
   const dietaryOptions = [
     {
-      value: "senior",
+      value: "SENIOR_CAT_FORMULA",
       title: "Senior Cat Formula",
       description: "Specialized nutrition for cats aged 7+",
     },
     {
-      value: "sensitive",
+      value: "SENSITIVE_STOMACH",
       title: "Sensitive Stomach",
       description:
         "Easily digestible ingredients for cats with digestive issues",
     },
     {
-      value: "kitten",
+      value: "KITTEN_GROWTH_FORMULA",
       title: "Kitten Growth Formula",
       description: "High protein meals for growing kittens",
     },
     {
-      value: "kidney",
+      value: "KIDNEY_SUPPORT",
       title: "Kidney Support",
       description: "Reduced phosphorus & sodium to support kidney health",
     },
     {
-      value: "urinary",
+      value: "URINARY_TRACT_HEALTH",
       title: "Urinary Tract Health",
       description: "High moisture meals to prevent UTIs",
     },
     {
-      value: "weight",
+      value: "WEIGHT_CONTROL",
       title: "Weight Control",
       description: "Low-calorie, high-protein meals for overweight cats",
     },
     {
-      value: "hairball",
+      value: "HAIRBALL_CONTROL",
       title: "Hairball Control",
       description: "Fiber-rich ingredients to aid digestion",
     },
   ];
-
   // Allergies & Intolerances options
   const allergyOptions = [
-    { value: "no-chicken", label: "No Chicken" },
-    { value: "grain-free", label: "Grain-Free (No wheat, corn, soy)" },
-    { value: "no-beef", label: "No Beef" },
-    { value: "dairy-free", label: "Dairy-Free (No milk, cheese, yogurt)" },
-    { value: "no-egg", label: "No Egg" },
+    { value: "NO_CHICKEN", label: "No Chicken" },
+    { value: "GRAIN_FREE", label: "Grain-Free (No wheat, corn, soy)" },
+    { value: "NO_BEEF", label: "No Beef" },
+    { value: "DAIRY_FREE", label: "Dairy-Free (No milk, cheese, yogurt)" },
+    { value: "NO_EGG", label: "No Egg" },
     {
-      value: "no-artificial",
+      value: "NO_ARTIFICIAL_PRESERVATIVES",
       label: "No Artificial Preservatives or Colorants",
     },
-    { value: "no-seafood", label: "No Seafood" },
+    { value: "NO_SEAFOOD", label: "No Seafood" },
   ];
 
   return (
@@ -800,14 +846,13 @@ function CatProfile() {
                   gap: "15px",
                 }}
               >
+                {" "}
                 {allergyOptions
                   .sort((a, b) => a.label.length - b.label.length) // Sort by text length, shortest first
                   .map((option) => (
                     <div
                       key={option.value}
-                      onClick={() =>
-                        setFormData({ ...formData, allergies: option.value })
-                      }
+                      onClick={() => handleAllergyChange(option.value)}
                       style={{
                         cursor: "pointer",
                         display: "flex",
@@ -832,7 +877,7 @@ function CatProfile() {
                             "10px" /* Added to align with the top of the label container */,
                         }}
                       >
-                        {formData.allergies === option.value && (
+                        {formData.allergies.includes(option.value) && (
                           <div
                             style={{
                               width: "10px",
@@ -841,7 +886,7 @@ function CatProfile() {
                               backgroundColor: "#4A72B8",
                             }}
                           ></div>
-                        )}
+                        )}{" "}
                       </div>
 
                       {/* Main label container */}
@@ -850,14 +895,14 @@ function CatProfile() {
                           padding: "10px 12px",
                           borderRadius: "8px",
                           border: "1px solid #D0D0D0",
-                          backgroundColor:
-                            formData.allergies === option.value
-                              ? "#F8F9FD"
-                              : "#FFFFFF",
-                          borderColor:
-                            formData.allergies === option.value
-                              ? "#A8B8E8"
-                              : "#D0D0D0",
+                          backgroundColor: formData.allergies.includes(
+                            option.value
+                          )
+                            ? "#F8F9FD"
+                            : "#FFFFFF",
+                          borderColor: formData.allergies.includes(option.value)
+                            ? "#A8B8E8"
+                            : "#D0D0D0",
                           flex: 1,
                         }}
                       >
@@ -886,26 +931,39 @@ function CatProfile() {
               {" "}
               <button
                 type="submit"
-                disabled={isUploading}
+                disabled={isUploading || isSubmitting}
                 style={{
-                  backgroundColor: isUploading ? "#A8B8E8" : "#4A72B8",
+                  backgroundColor:
+                    isUploading || isSubmitting ? "#A8B8E8" : "#4A72B8",
                   color: "white",
                   padding: "15px 30px",
                   borderRadius: "6px",
                   border: "none",
                   fontSize: "1rem",
                   fontWeight: "bold",
-                  cursor: isUploading ? "not-allowed" : "pointer",
+                  cursor:
+                    isUploading || isSubmitting ? "not-allowed" : "pointer",
                   minWidth: "250px",
                   fontFamily: splineTheme.typography.fontFamily.body,
                 }}
               >
                 {isUploading
                   ? "UPLOADING IMAGE..."
-                  : formData.catPhoto
-                  ? "SUBMIT CAT PROFILE"
-                  : "VIEW YOUR FELINE PROFILE"}
+                  : isSubmitting
+                  ? "CREATING PROFILE..."
+                  : "SUBMIT CAT PROFILE"}
               </button>
+              {submitError && (
+                <p
+                  style={{
+                    color: "#e74c3c",
+                    marginTop: "10px",
+                    fontFamily: splineTheme.typography.fontFamily.body,
+                  }}
+                >
+                  {submitError}
+                </p>
+              )}
             </div>
           </form>
         </div>

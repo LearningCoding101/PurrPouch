@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getCatProfile } from "../services/api";
 import PageWrapper from "../component/global/PageWrapper";
 import catGang from "../assets/image/catprofile/gang.png";
 import { splineTheme } from "../theme/global_theme";
+import { useCatProfile } from "../provider/cat_profile_provider";
 
 // Blurry Loading Image Component
 const BlurryLoadingImage = ({ src, alt }) => {
@@ -49,26 +49,22 @@ const BlurryLoadingImage = ({ src, alt }) => {
 function CatProfileDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const {
+    profiles,
+    loading: profileLoading,
+    error: profileError,
+    fetchCatProfile,
+  } = useCatProfile();
+
+  // Get the profile from context
+  const profile = profiles[id];
+  const loading = profileLoading && !profile;
+  const error = profileError && profileError[id];
 
   useEffect(() => {
-    const fetchCatProfile = async () => {
-      try {
-        setLoading(true);
-        const response = await getCatProfile(id);
-        setProfile(response.data);
-        setLoading(false);
-      } catch (err) {
-        console.error("Error fetching cat profile:", err);
-        setError("Failed to load this cat profile. Please try again later.");
-        setLoading(false);
-      }
-    };
-
-    fetchCatProfile();
-  }, [id]);
+    // Fetch cat profile if not already in context
+    fetchCatProfile(id);
+  }, [id, fetchCatProfile]);
 
   // Handle back button click
   const handleBack = () => {
@@ -139,7 +135,7 @@ function CatProfileDetail() {
                 padding: "0.5rem 1.5rem",
                 backgroundColor: "#5991dc",
                 color: "#FFFFFF",
-                borderRadius: "30px",
+                borderRadius: "10px",
                 border: "none",
                 cursor: "pointer",
                 marginTop: "1rem",
@@ -206,7 +202,7 @@ function CatProfileDetail() {
                     borderRadius: "6px",
                   }}
                 ></div>
-              </div>
+              </div>{" "}
               {/* Card Header with Identity Card Title */}
               <div
                 style={{
@@ -230,6 +226,47 @@ function CatProfileDetail() {
                 >
                   IDENTITY CARD
                 </h2>
+                {/* Edit Icon */}
+                <div
+                  onClick={() => navigate(`/edit-cat-profile/${profile.id}`)}
+                  style={{
+                    position: "absolute",
+                    top: "-10px",
+                    right: "10px",
+                    width: "40px",
+                    height: "40px",
+                    borderRadius: "50%",
+                    backgroundColor: "#5991dc",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    cursor: "pointer",
+                    boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+                    transition: "all 0.2s ease",
+                    zIndex: 10,
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.transform = "scale(1.1)";
+                    e.currentTarget.style.backgroundColor = "#4A7AC1";
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.transform = "scale(1)";
+                    e.currentTarget.style.backgroundColor = "#5991dc";
+                  }}
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                  </svg>
+                </div>
               </div>{" "}
               {/* Main content container - split 40/60 */}
               <div style={{ display: "flex", marginBottom: "2rem" }}>
@@ -480,7 +517,7 @@ function CatProfileDetail() {
                                     border: `1px solid ${
                                       isSpecial ? "#4A7AC1" : "#dce6f5"
                                     }`,
-                                    borderRadius: "30px",
+                                    borderRadius: "10px",
                                     padding: "0.5rem 1rem",
                                     color: isSpecial ? "#FFFFFF" : "#1d3557",
                                     display: "flex",
@@ -513,7 +550,7 @@ function CatProfileDetail() {
                               style={{
                                 backgroundColor: "#f8f9fa",
                                 border: "1px solid #dce6f5",
-                                borderRadius: "30px",
+                                borderRadius: "10px",
                                 padding: "0.5rem 1rem",
                                 color: "#1d3557",
                                 fontSize: "0.85rem",
@@ -572,7 +609,7 @@ function CatProfileDetail() {
                                 style={{
                                   backgroundColor: "#f8f9fa",
                                   border: "1px solid #dce6f5",
-                                  borderRadius: "30px",
+                                  borderRadius: "10px",
                                   padding: "0.5rem 1rem",
                                   color: "#1d3557",
                                   fontSize: "0.85rem",
@@ -592,7 +629,7 @@ function CatProfileDetail() {
                               style={{
                                 backgroundColor: "#f8f9fa",
                                 border: "1px solid #dce6f5",
-                                borderRadius: "30px",
+                                borderRadius: "10px",
                                 padding: "0.5rem 1rem",
                                 color: "#1d3557",
                                 fontSize: "0.85rem",
@@ -650,7 +687,7 @@ function CatProfileDetail() {
                                 style={{
                                   backgroundColor: "#f8f9fa",
                                   border: "1px solid #dce6f5",
-                                  borderRadius: "30px",
+                                  borderRadius: "10px",
                                   padding: "0.5rem 1rem",
                                   color: "#1d3557",
                                   fontSize: "0.85rem",
@@ -670,7 +707,7 @@ function CatProfileDetail() {
                               style={{
                                 backgroundColor: "#f8f9fa",
                                 border: "1px solid #dce6f5",
-                                borderRadius: "30px",
+                                borderRadius: "10px",
                                 padding: "0.5rem 1rem",
                                 color: "#1d3557",
                                 fontSize: "0.85rem",
@@ -753,7 +790,7 @@ function CatProfileDetail() {
                   backgroundColor: "#f8d4d4",
                   color: "#1d3557",
                   border: "none",
-                  borderRadius: "30px",
+                  borderRadius: "10px",
                   cursor: "pointer",
                   fontWeight: "600",
                   fontSize: "1rem",
@@ -779,7 +816,7 @@ function CatProfileDetail() {
                   backgroundColor: "#5991dc",
                   color: "#FFFFFF",
                   border: "none",
-                  borderRadius: "30px",
+                  borderRadius: "10px",
                   cursor: "pointer",
                   fontWeight: "600",
                   fontSize: "1rem",
@@ -818,7 +855,7 @@ function CatProfileDetail() {
                 padding: "0.5rem 1.5rem",
                 backgroundColor: "#5991dc",
                 color: "#FFFFFF",
-                borderRadius: "30px",
+                borderRadius: "10px",
                 border: "none",
                 cursor: "pointer",
                 marginTop: "1rem",

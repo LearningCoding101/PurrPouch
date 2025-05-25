@@ -1,43 +1,71 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.0</version> <relativePath/> </parent>
+        <version>3.3.0</version>
+        <relativePath />
+    </parent>
     <groupId>com.purrpouch</groupId>
     <artifactId>backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>backend</name>
     <description>Demo project for Spring Boot</description>
-    <url>https://www.purrpouch.com/backend</url> <licenses>
+    <url>https://www.purrpouch.com/backend</url>
+    <licenses>
         <license>
-            <name>Apache License, Version 2.0</name> <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
 
     <developers>
         <developer>
-            <id>your-id</id> <name>Your Name</name>
+            <id>your-id</id>
+            <name>Your Name</name>
             <email>your.email@example.com</email>
             <organization>Purrpouch</organization>
             <organizationUrl>https://www.purrpouch.com</organizationUrl>
         </developer>
     </developers>
 
+    <repositories>
+
+        <repository>
+            <id>spring-milestones</id>
+            <name>Spring Milestones</name>
+            <url>https://repo.spring.io/milestone</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+
+
+        <repository>
+            <id>spring-snapshots</id>
+            <name>Spring Snapshots</name>
+            <url>https://repo.spring.io/snapshot</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </repository>
+    </repositories>
+
     <scm>
-        <connection>scm:git:git://github.com/purrpouch/backend.git</connection> <developerConnection>scm:git:ssh://github.com:purrpouch/backend.git</developerConnection>
+        <connection>scm:git:git://github.com/purrpouch/backend.git</connection>
+        <developerConnection>scm:git:ssh://github.com:purrpouch/backend.git</developerConnection>
         <tag>HEAD</tag>
         <url>https://github.com/purrpouch/backend</url>
     </scm>
 
     <properties>
         <java.version>17</java.version>
-        <spring-ai.version>1.0.0-M6</spring-ai.version>
-	 </properties>
+        <spring-ai.version>1.0.0-M5</spring-ai.version>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -68,6 +96,12 @@
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+            <version>1.0.0-M5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-openai</artifactId>
+            <version>1.0.0-M5</version>
         </dependency>
 
         <dependency>
@@ -83,7 +117,8 @@
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-jackson</artifactId> <version>0.11.5</version>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>0.11.5</version>
             <scope>runtime</scope>
         </dependency>
 
@@ -131,17 +166,6 @@
         </dependency>
     </dependencies>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-bom</artifactId>
-                <version>${spring-ai.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <build>
         <plugins>
@@ -153,8 +177,9 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                            <version>${lombok.version}</version> </path>
-                        </annotationProcessorPaths>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
             <plugin>
@@ -172,4 +197,4 @@
         </plugins>
     </build>
 
-    </project>
+</project>

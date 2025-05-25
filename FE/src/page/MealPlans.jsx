@@ -10,6 +10,7 @@ import {
   clearChatHistory,
   generateAiMealKit,
   getAllFoodSkus,
+  addItemToCart,
 } from "../services/api";
 import PageWrapper from "../component/global/PageWrapper";
 import { splineTheme } from "../theme/global_theme";
@@ -28,6 +29,107 @@ import mixedFoodImg from "../assets/image/meal-plan/image-3.png";
 // Mic icon for voice input
 import micIcon from "../assets/icons/mic.svg";
 
+// Helper component for Food Items
+const FoodItem = ({ item }) => {
+  const iconType = item.type === "SUPPLEMENT" ? "plus" : "diamond";
+
+  const iconStyle = {
+    color: iconType === "diamond" ? "#FFA500" : "#5A87C5", // Orange for diamond, blue for plus
+    marginRight: "10px",
+    fontWeight: "bold",
+    fontSize: iconType === "diamond" ? "14px" : "16px",
+  };
+  const itemStyle = {
+    display: "flex",
+    justifyContent: "space-between",
+    padding: "12px 0",
+    fontSize: "14px",
+    // Removed the border-bottom
+  };
+
+  const nameStyle = {
+    display: "flex",
+    alignItems: "center",
+  };
+
+  return (
+    <div style={itemStyle}>
+      <span style={nameStyle}>
+        <span style={iconStyle}>{iconType === "diamond" ? "◆" : "+"}</span>
+        {item.name}
+      </span>
+      <span style={{ fontWeight: "500" }}>
+        {item.quantity}
+        {item.unit}
+      </span>
+    </div>
+  );
+};
+
+// Helper component for Meal Sections
+const MealSection = ({ title, items }) => {
+  const sectionStyle = {
+    marginBottom: "20px",
+    backgroundColor: "#fff",
+    borderRadius: "8px",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+    // Removed the border
+    overflow: "hidden",
+  };
+
+  const headerContainerStyle = {
+    display: "flex",
+    justifyContent: "space-between",
+    marginBottom: "15px",
+    padding: "12px",
+    gap: "12px",
+  };
+  const titleCellStyle = {
+    width: "80%",
+    backgroundColor: "#FFFFFF",
+    padding: "12px 16px",
+    borderRadius: "8px",
+    fontWeight: "800", // Increased from bold to 800 for thicker text
+    fontSize: "17px", // Increased font size for better visibility
+    color: "#1A335C",
+    border: "3px solid ",
+    boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+    textAlign: "center",
+    fontFamily: "Spline Sans",
+  };
+
+  const portionsCellStyle = {
+    width: "20%",
+    backgroundColor: "#FFFFFF",
+    padding: "12px 8px",
+    borderRadius: "8px",
+    fontSize: "14px",
+    color: "#1A335C",
+    fontWeight: "bold",
+    border: "3px solid ",
+    textAlign: "center",
+    boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+    fontFamily: "Spline Sans",
+  };
+
+  const itemsContainerStyle = {
+    padding: "0 16px 16px 16px",
+  };
+  return (
+    <div style={sectionStyle}>
+      <div style={headerContainerStyle}>
+        <div style={titleCellStyle}>{title}</div>
+        <div style={portionsCellStyle}>Portions</div>
+      </div>
+      <div style={itemsContainerStyle}>
+        {items.map((item, index) => (
+          <FoodItem key={index} item={item} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // MealSetCard Component for displaying meal plans in the required layout
 function MealSetCard({
   mealKit,
@@ -44,237 +146,184 @@ function MealSetCard({
     LUNCH: "Midday snack",
     DINNER: "Evening",
   };
-
-  // Determines which icon to use for each food item
-  const getItemIcon = (index) => {
-    // Use diamond for main foods, plus for supplements
-    return index < 2 ? "◆" : "+";
+  const cardStyle = {
+    fontFamily: splineTheme.typography.fontFamily.body,
+    width: "calc(50% - 1rem)", // Ensure exactly 50% minus gap space
+    maxWidth: "500px",
+    padding: "20px",
+    backgroundColor: "#FFFFFF",
+    borderRadius: "12px",
+    color: "#333",
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+    // boxShadow: isSelected ? "0 4px 8px rgba(90, 135, 197, 0.2)" : "0 ",
+    border: "none", // Remove border completely
+  };
+  const mainTitleStyle = {
+    textAlign: "center",
+    fontSize: "18px",
+    fontWeight: "bold",
+    backgroundColor: "#f8f9fa",
+    padding: "14px",
+    borderRadius: "8px",
+    marginBottom: "20px",
+    color: "#495057",
+    border: "2px solid #e9ecef",
+    boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+  };
+  const quantitySectionStyle = {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: "20px",
+    // padding: "12px",
+    backgroundColor: "#FFFFFF",
+    borderRadius: "8px",
+    // Removed border and box-shadow as requested
+  };
+  const quantityControlsStyle = {
+    display: "flex",
+    alignItems: "center",
+    backgroundColor: "#E7EAEE",
+    padding: "5px",
+    borderRadius: "8px",
+  };
+  const quantityLabelStyle = {
+    fontSize: "14px",
+    fontWeight: "bold",
+    marginRight: "10px",
+    color: "#495057",
+    backgroundColor: "#E7EAEE",
+    paddingLeft: "10px",
+    paddingRight: "10px",
+    borderRadius: "8px",
+    height: "40px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  };
+  const baseButtonStyle = {
+    background: "#E7EAEE",
+    color: "#333",
+    border: "none",
+    width: "40px",
+    height: "40px",
+    fontSize: "18px",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   };
 
-  // Get icon color based on index
-  const getIconColor = (index) => {
-    return index < 2 ? "#FFA500" : "#555"; // Orange for main foods, dark gray for supplements
+  const minusButtonStyle = {
+    ...baseButtonStyle,
+    borderRadius: "8px 0 0 8px", // Only round the left corners
+  };
+
+  const plusButtonStyle = {
+    ...baseButtonStyle,
+    borderRadius: "0 8px 8px 0", // Only round the right corners
+  };
+
+  const quantityDisplayStyle = {
+    fontSize: "16px",
+    fontWeight: "bold",
+    minWidth: "40px",
+    textAlign: "center",
+    padding: "0 10px",
+    backgroundColor: "#E7EAEE",
+    height: "40px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "0", // No border radius
+  };
+
+  const totalPriceStyle = {
+    fontSize: "20px",
+    fontWeight: "bold",
+    color: "#333",
+    backgroundColor: "#E7EAEE",
+    padding: "0 15px",
+    borderRadius: "8px",
+    height: "40px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: "120px",
   };
 
   return (
-    <div
-      onClick={onSelect}
-      style={{
-        width: "calc(50% - 1rem)",
-        minWidth: "300px",
-        borderRadius: "10px",
-        backgroundColor: "#FFFFFF",
-        cursor: "pointer",
-        transition: "all 0.2s ease",
-        boxShadow: isSelected ? "0 4px 8px rgba(90, 135, 197, 0.2)" : "none",
-        overflow: "hidden",
-        border: isSelected ? "2px solid #5A87C5" : "1px solid #dce6f5",
-      }}
-    >
-      {/* Title Bar */}
-      <div
-        style={{
-          backgroundColor: "#E9ECEF",
-          padding: "12px 16px",
-          borderTopLeftRadius: "10px",
-          borderTopRightRadius: "10px",
-          textAlign: "center",
-          fontFamily: splineTheme.typography.fontFamily.body,
-        }}
-      >
-        <h4 style={{ margin: 0, fontWeight: "normal" }}>{mealKit.kitName}</h4>
-      </div>
-
+    <div onClick={onSelect} style={cardStyle}>
+      {/* Title */}
+      <div style={mainTitleStyle}>{mealKit.kitName}</div>
       {/* Meal Sections */}
       {mealKit.meals.map((meal, mealIndex) => (
-        <div
+        <MealSection
           key={`meal-${mealIndex}`}
-          style={{
-            marginBottom: mealIndex < mealKit.meals.length - 1 ? "12px" : 0,
-          }}
-        >
-          {/* Meal Header Row */}
+          title={mealTypeLabels[meal.mealType] || meal.mealType}
+          items={meal.foodItems}
+        />
+      ))}{" "}
+      {/* Quantity and Price Section */}{" "}
+      <div style={quantitySectionStyle}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={quantityLabelStyle}>Quantity</span>
           <div
             style={{
               display: "flex",
-              justifyContent: "space-between",
-              backgroundColor: "#FFFFFF",
-              padding: "10px 16px",
-              borderBottom: "1px solid #E9ECEF",
+              alignItems: "center",
+              // gap: "8px",
+              height: "40px",
             }}
           >
-            <div
-              style={{
-                fontWeight: "600",
-                color: "#333",
-              }}
-            >
-              {mealTypeLabels[meal.mealType] || meal.mealType}
-            </div>
-            <div
-              style={{
-                fontWeight: "600",
-                color: "#333",
-              }}
-            >
-              Portions
-            </div>
-          </div>
-
-          {/* Food Items */}
-          {meal.foodItems.map((item, itemIndex) => (
-            <div
-              key={`food-item-${itemIndex}`}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                padding: "10px 16px",
-                backgroundColor: "#FFFFFF",
-                borderBottom:
-                  itemIndex < meal.foodItems.length - 1
-                    ? "1px solid #f5f5f5"
-                    : "none",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  width: "75%",
-                }}
-              >
-                <span
-                  style={{
-                    marginRight: "8px",
-                    color: getIconColor(itemIndex),
-                    fontWeight: "bold",
-                  }}
-                >
-                  {getItemIcon(itemIndex)}
-                </span>
-                <span style={{ fontSize: "0.9rem" }}>{item.name}</span>
-              </div>
-              <span
-                style={{
-                  fontSize: "0.9rem",
-                  textAlign: "right",
-                }}
-              >
-                {item.quantity} {item.unit}
-              </span>
-            </div>
-          ))}
-        </div>
-      ))}
-
-      {/* Quantity and Price Section */}
-      <div
-        style={{
-          padding: "16px",
-          backgroundColor: "#f8f9fa",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <div
-            style={{
-              backgroundColor: "#E9ECEF",
-              padding: "6px 12px",
-              borderRadius: "5px",
-              marginRight: "10px",
-              fontSize: "0.9rem",
-            }}
-          >
-            Quantity
-          </div>
-          <div style={{ display: "flex", alignItems: "center" }}>
+            {" "}
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onQuantityChange(-1);
               }}
-              style={{
-                width: "28px",
-                height: "28px",
-                border: "1px solid #dce6f5",
-                borderRadius: "50%",
-                background: "#FFFFFF",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
+              style={minusButtonStyle}
             >
               -
             </button>
-            <span style={{ margin: "0 10px", fontSize: "1rem" }}>
-              {quantity}
-            </span>
+            <span style={quantityDisplayStyle}>{quantity}</span>
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onQuantityChange(1);
               }}
-              style={{
-                width: "28px",
-                height: "28px",
-                border: "1px solid #dce6f5",
-                borderRadius: "50%",
-                background: "#FFFFFF",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
+              style={plusButtonStyle}
             >
               +
             </button>
           </div>
-        </div>
-        <div
-          style={{
-            backgroundColor: "#E9ECEF",
-            padding: "6px 12px",
-            borderRadius: "5px",
-            fontWeight: "bold",
-            fontSize: "1.1rem",
-          }}
-        >
-          {totalPrice.toLocaleString()}
-        </div>
+        </div>{" "}
+        <div style={totalPriceStyle}>{totalPrice.toLocaleString()}</div>
       </div>
-
-      {/* Add to Cart Button */}
-      {isSelected && (
-        <div
-          style={{
-            padding: "0 16px 16px 16px",
-            backgroundColor: "#f8f9fa",
-          }}
-        >
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onAddToCart();
-            }}
-            style={{
-              padding: "10px",
-              backgroundColor: "#3D5A9A",
-              color: "#FFFFFF",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
-              fontWeight: "600",
-              fontFamily: splineTheme.typography.fontFamily.body,
-              width: "100%",
-            }}
-          >
-            Add to cart
-          </button>
-        </div>
-      )}
+      {/* Individual Add to Cart Button */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onAddToCart();
+        }}
+        style={{
+          marginTop: "15px",
+          padding: "10px 20px",
+          backgroundColor: "#5A87C5",
+          color: "#FFFFFF",
+          border: "none",
+          borderRadius: "8px",
+          cursor: "pointer",
+          fontWeight: "600",
+          fontFamily: splineTheme.typography.fontFamily.body,
+          fontSize: "16px",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+          width: "100%",
+        }}
+      >
+        Add to cart
+      </button>
     </div>
   );
 }
@@ -293,7 +342,8 @@ function MealPlans() {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("ai-chat");
   const [activeDietType, setActiveDietType] = useState("Suggest Diet Type");
-  const [quantity, setQuantity] = useState(1);
+  const [mealKitQuantities, setMealKitQuantities] = useState({}); // Object to track quantity per meal kit
+  const [mealKitPrices, setMealKitPrices] = useState({}); // Object to track price per meal kit
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState([]);
   const [chatLoading, setChatLoading] = useState(false);
@@ -304,7 +354,6 @@ function MealPlans() {
   const [generatedMealKits, setGeneratedMealKits] = useState([]);
   const [selectedMealKitId, setSelectedMealKitId] = useState(null);
   const [foodSkus, setFoodSkus] = useState([]);
-  const [totalPrice, setTotalPrice] = useState(0);
 
   const chatContainerRef = useRef(null);
   const recognitionRef = useRef(null);
@@ -477,34 +526,33 @@ function MealPlans() {
       handleGenerateMealKit();
     }
   };
+  const handleQuantityChange = (kitId, change) => {
+    setMealKitQuantities((prev) => {
+      const currentQuantity = prev[kitId] || 1;
+      const newQuantity = Math.max(1, currentQuantity + change);
+      const updated = { ...prev, [kitId]: newQuantity };
 
-  const handleQuantityChange = (change) => {
-    // Prevent quantity from going below 1
-    const newQuantity = Math.max(1, quantity + change);
-    setQuantity(newQuantity);
-
-    // Recalculate price if we have a selected meal kit
-    if (selectedMealKitId) {
-      const selectedKit = generatedMealKits.find(
-        (kit) => kit.kitId === selectedMealKitId
-      );
+      // Recalculate price for this meal kit
+      const selectedKit = generatedMealKits.find((kit) => kit.kitId === kitId);
       if (selectedKit) {
         calculateTotalPrice(selectedKit, newQuantity);
       }
-    }
-  };
 
+      return updated;
+    });
+  };
   const handleMealKitSelect = (kitId) => {
     setSelectedMealKitId(kitId);
     const selectedKit = generatedMealKits.find((kit) => kit.kitId === kitId);
     if (selectedKit) {
-      calculateTotalPrice(selectedKit);
+      const quantity = mealKitQuantities[kitId] || 1;
+      calculateTotalPrice(selectedKit, quantity);
     }
   };
-
-  const calculateTotalPrice = (mealKit, qty = quantity) => {
+  const calculateTotalPrice = (mealKit, qty) => {
     if (!mealKit || !foodSkus || foodSkus.length === 0) return;
 
+    const quantity = qty || mealKitQuantities[mealKit.kitId] || 1;
     let price = 0;
     // Loop through all meals and their food items
     mealKit.meals.forEach((meal) => {
@@ -523,9 +571,14 @@ function MealPlans() {
     }
 
     // Multiply by quantity
-    price = price * qty;
+    price = price * quantity;
 
-    setTotalPrice(price);
+    // Update the price for this specific meal kit
+    setMealKitPrices((prev) => ({
+      ...prev,
+      [mealKit.kitId]: price,
+    }));
+
     return price;
   };
   const handleGenerateMealKit = async () => {
@@ -650,13 +703,20 @@ function MealPlans() {
               });
             }
           });
-        }
-
-        // Set both meal kits in state
+        } // Set both meal kits in state
         const mealKits = [firstMealKit, secondMealKit];
         setGeneratedMealKits(mealKits);
         setSelectedMealKitId(firstMealKit.kitId);
-        calculateTotalPrice(firstMealKit);
+
+        // Initialize quantities for both meal kits
+        setMealKitQuantities({
+          [firstMealKit.kitId]: 1,
+          [secondMealKit.kitId]: 1,
+        });
+
+        // Calculate initial prices for both meal kits
+        calculateTotalPrice(firstMealKit, 1);
+        calculateTotalPrice(secondMealKit, 1);
       }
     } catch (err) {
       console.error("Error generating AI meal kit:", err); // If there's an error, set mock meal kits for testing
@@ -840,11 +900,19 @@ function MealPlans() {
           },
         ],
       };
-
       const mealKits = [mockMealKit1, mockMealKit2];
       setGeneratedMealKits(mealKits);
       setSelectedMealKitId(mockMealKit1.kitId);
-      calculateTotalPrice(mockMealKit1);
+
+      // Initialize quantities for both meal kits
+      setMealKitQuantities({
+        [mockMealKit1.kitId]: 1,
+        [mockMealKit2.kitId]: 1,
+      });
+
+      // Calculate initial prices for both meal kits
+      calculateTotalPrice(mockMealKit1, 1);
+      calculateTotalPrice(mockMealKit2, 1);
     } finally {
       setGeneratingMeal(false);
     }
@@ -921,19 +989,28 @@ function MealPlans() {
   };
   const handleAddToCart = async (mealPlanId) => {
     try {
-      // If this is an AI-generated meal kit, send it differently
+      const quantity = mealKitQuantities[mealPlanId] || 1;
+      const price = mealKitPrices[mealPlanId] || 150000; // Default price if not set
+
+      // Find the selected kit
       const selectedKit = generatedMealKits.find(
         (kit) => kit.kitId === mealPlanId
       );
-      if (selectedKit) {
-        await addToCart(mealPlanId, quantity, id, selectedKit);
+
+      // Use our new addItemToCart function
+      const kitName = selectedKit
+        ? selectedKit.kitName
+        : `Meal Kit #${mealPlanId}`;
+
+      const success = addItemToCart(mealPlanId, kitName, price, quantity, id);
+
+      if (success) {
+        alert("Added to cart successfully!");
       } else {
-        await addToCart(mealPlanId, quantity, id);
+        alert("Failed to add to cart. Please try again.");
       }
-      alert("Added to cart successfully!");
-      // Optionally navigate to cart or show a success message
-    } catch (err) {
-      console.error("Error adding to cart:", err);
+    } catch (error) {
+      console.error("Error adding to cart:", error);
       alert("Failed to add to cart. Please try again.");
     }
   };
@@ -1421,14 +1498,7 @@ function MealPlans() {
                           overflowX: "auto",
                         }}
                       >
-                        {[
-                          "Suggest Diet Type",
-                          "High-protein, energy-boosting meals with hydration support",
-                          "Wet Food",
-                          "Dry Food",
-                          "Topping",
-                          "Treat",
-                        ].map((type) => (
+                        {["Suggest Diet Type"].map((type) => (
                           <button
                             key={type}
                             style={{
@@ -1502,29 +1572,43 @@ function MealPlans() {
                           </h3>{" "}
                           <div
                             style={{
-                              display: "flex",
-                              flexWrap: "wrap",
-                              gap: "2rem",
-                              justifyContent: "center",
-                              marginBottom: "2rem",
+                              position: "relative",
+                              marginBottom: "4rem",
                             }}
                           >
-                            {generatedMealKits.map((mealKit) => (
-                              <MealSetCard
-                                key={mealKit.kitId}
-                                mealKit={mealKit}
-                                isSelected={selectedMealKitId === mealKit.kitId}
-                                onSelect={() =>
-                                  handleMealKitSelect(mealKit.kitId)
-                                }
-                                quantity={quantity}
-                                onQuantityChange={handleQuantityChange}
-                                totalPrice={totalPrice}
-                                onAddToCart={() =>
-                                  handleAddToCart(mealKit.kitId)
-                                }
-                              />
-                            ))}
+                            <div
+                              style={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: "2rem",
+                                justifyContent: "space-between",
+                                marginBottom: "2rem",
+                              }}
+                            >
+                              {" "}
+                              {generatedMealKits.map((mealKit) => (
+                                <MealSetCard
+                                  key={mealKit.kitId}
+                                  mealKit={mealKit}
+                                  isSelected={
+                                    selectedMealKitId === mealKit.kitId
+                                  }
+                                  onSelect={() =>
+                                    handleMealKitSelect(mealKit.kitId)
+                                  }
+                                  quantity={
+                                    mealKitQuantities[mealKit.kitId] || 1
+                                  }
+                                  onQuantityChange={(change) =>
+                                    handleQuantityChange(mealKit.kitId, change)
+                                  }
+                                  totalPrice={mealKitPrices[mealKit.kitId] || 0}
+                                  onAddToCart={() =>
+                                    handleAddToCart(mealKit.kitId)
+                                  }
+                                />
+                              ))}{" "}
+                            </div>
                           </div>
                         </div>
                       )}

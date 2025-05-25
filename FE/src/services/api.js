@@ -240,4 +240,119 @@ export const getMealKitsForCat = (catId) => {
   return api.get(`/meal-kits/cat/${catId}`);
 };
 
+// Order related APIs
+export const createOrder = (userId, kitItems, totalPrice) => {
+  return api.post("/orders", {
+    userId,
+    kitItems,
+    totalPrice,
+  });
+};
+
+export const getUserOrders = (userId) => {
+  return api.get(`/orders/user/${userId}`);
+};
+
+export const getOrderById = (orderId) => {
+  return api.get(`/orders/${orderId}`);
+};
+
+export const getOrderKits = (orderId) => {
+  return api.get(`/orders/${orderId}/kits`);
+};
+
+export const updateOrderStatus = (orderId, status) => {
+  return api.put(`/orders/${orderId}/status`, { status });
+};
+
+// Cart functions (using local storage)
+export const getCartItems = () => {
+  try {
+    const items = localStorage.getItem("cart_items");
+    return items ? JSON.parse(items) : [];
+  } catch (error) {
+    console.error("Error loading cart items:", error);
+    return [];
+  }
+};
+
+export const saveCartItems = (items) => {
+  try {
+    localStorage.setItem("cart_items", JSON.stringify(items));
+    return true;
+  } catch (error) {
+    console.error("Error saving cart items:", error);
+    return false;
+  }
+};
+
+export const addItemToCart = (kitId, name, price, quantity = 1, catId) => {
+  try {
+    const cartItems = getCartItems();
+    const existingItemIndex = cartItems.findIndex(
+      (item) => item.kitId === kitId
+    );
+
+    if (existingItemIndex >= 0) {
+      // Update existing item
+      cartItems[existingItemIndex].quantity += quantity;
+    } else {
+      // Add new item
+      cartItems.push({
+        kitId,
+        name,
+        price,
+        quantity,
+        catId,
+        addedAt: new Date().toISOString(),
+      });
+    }
+
+    saveCartItems(cartItems);
+    return true;
+  } catch (error) {
+    console.error("Error adding item to cart:", error);
+    return false;
+  }
+};
+
+export const removeItemFromCart = (kitId) => {
+  try {
+    let cartItems = getCartItems();
+    cartItems = cartItems.filter((item) => item.kitId !== kitId);
+    saveCartItems(cartItems);
+    return true;
+  } catch (error) {
+    console.error("Error removing item from cart:", error);
+    return false;
+  }
+};
+
+export const updateCartItemQuantity = (kitId, quantity) => {
+  try {
+    const cartItems = getCartItems();
+    const itemIndex = cartItems.findIndex((item) => item.kitId === kitId);
+
+    if (itemIndex >= 0) {
+      cartItems[itemIndex].quantity = quantity;
+      saveCartItems(cartItems);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error("Error updating cart item quantity:", error);
+    return false;
+  }
+};
+
+export const clearCart = () => {
+  try {
+    localStorage.removeItem("cart_items");
+    return true;
+  } catch (error) {
+    console.error("Error clearing cart:", error);
+    return false;
+  }
+};
+
 export default api;

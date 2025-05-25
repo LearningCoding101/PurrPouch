@@ -1,24 +1,53 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { splineTheme } from "../../theme/global_theme";
 import Logo from "./Logo";
 import { useAuth } from "../../provider/auth_provider";
 import { auth } from "../../firebase";
 import { signOut } from "firebase/auth";
+import { getCartItems } from "../../services/api";
 
 function Header() {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [cartItemCount, setCartItemCount] = useState(0);
+
+  useEffect(() => {
+    // Load cart items on component mount
+    updateCartCount();
+
+    // Add event listener for storage changes (for cart updates from other tabs)
+    window.addEventListener("storage", handleStorageChange);
+
+    // Set up interval to periodically check cart
+    const interval = setInterval(updateCartCount, 5000); // Check every 5 seconds
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
+
+  const updateCartCount = () => {
+    const items = getCartItems();
+    setCartItemCount(items.length);
+  };
+
+  const handleStorageChange = (e) => {
+    if (e.key === "cart_items") {
+      updateCartCount();
+    }
+  };
 
   const handleSignOut = async () => {
     try {
       await signOut(auth);
-      localStorage.removeItem("token");
-      navigate("/login");
-    } catch (err) {
-      console.error("Sign out failed:", err);
+      navigate("/");
+    } catch (error) {
+      console.error("Error signing out:", error);
     }
   };
+
   return (
     <header
       style={{
@@ -135,9 +164,9 @@ function Header() {
                 <circle cx="12" cy="7" r="4"></circle>
               </svg>
             </Link>
-          </div>
-          <div>
-            <Link to="/cart" style={{ color: "black", textDecoration: "none" }}>
+          </div>          <div>
+            <Link to="/cart" style={{ color: "black", textDecoration: "none", position: "relative", display: "inline-block" }}>
+              {/* Shopping Cart SVG Icon */}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
@@ -151,8 +180,32 @@ function Header() {
               >
                 <circle cx="9" cy="21" r="1"></circle>
                 <circle cx="20" cy="21" r="1"></circle>
-                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                <path d="m1 1 4 4 13 2 1 8H7"></path>
               </svg>
+              
+              {/* Red Badge Circle */}
+              {cartItemCount > 0 && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: "-8px",
+                    right: "-8px",
+                    backgroundColor: "#ff6b6b",
+                    color: "white",
+                    borderRadius: "50%",
+                    width: "20px",
+                    height: "20px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "12px",
+                    fontWeight: "bold",
+                    fontFamily: splineTheme.typography.fontFamily.body,
+                  }}
+                >
+                  {cartItemCount}
+                </span>
+              )}
             </Link>
           </div>{" "}
           <div>

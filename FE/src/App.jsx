@@ -14,6 +14,8 @@ import CatProfileDetail from "./page/CatProfileDetail";
 import EditCatProfile from "./page/EditCatProfile";
 import MealPlans from "./page/MealPlans";
 import AboutUs from "./page/AboutUs";
+import Cart from "./page/Cart";
+import Orders from "./page/Orders";
 import { AuthProvider } from "./provider/auth_provider";
 import { CatProfileProvider } from "./provider/cat_profile_provider";
 import {
@@ -89,6 +91,8 @@ function App() {
                   element={<EditCatProfile />}
                 />
                 <Route path="/meal-plans/:id" element={<MealPlans />} />
+                <Route path="/cart" element={<Cart />} />
+                <Route path="/orders" element={<Orders />} />
                 <Route path="/customer" element={<CustomerPanel />} />
               </Route>
 

@@ -10,13 +10,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 @Service
 public class OrderService {
-
     @Autowired
     private OrderRepository orderRepository;
 
@@ -28,6 +29,9 @@ public class OrderService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private DeliveryService deliveryService;
 
     /**
      * Create a new order with the provided meal kits
@@ -62,6 +66,59 @@ public class OrderService {
             orderKit.setFoodKit(foodKit);
             orderKit.setKitQuantity(quantity);
             orderKitRepository.save(orderKit);
+        }
+
+        return savedOrder;
+    }
+
+    /**
+     * Create a new order with the provided meal kits, with recurring options
+     */
+    @Transactional
+    public Order createOrder(Long userId, Map<Long, Integer> kitItems, BigDecimal totalPrice,
+            boolean isRecurring, Order.RecurringFrequency frequency, LocalTime deliveryTime,
+            Address deliveryAddress) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Create the order
+        Order order = new Order();
+        order.setUser(user);
+        order.setTotalPrice(totalPrice);
+        order.setStatus(Order.OrderStatus.PENDING);
+
+        // Set recurring details if applicable
+        if (isRecurring) {
+            order.setRecurring(true);
+            order.setRecurringFrequency(frequency);
+            order.setPreferredDeliveryTime(deliveryTime);
+
+            // Calculate next delivery date based on frequency
+            LocalDateTime nextDelivery = calculateNextDeliveryDate(LocalDateTime.now(), frequency);
+            order.setNextDeliveryDate(nextDelivery);
+        }
+
+        Order savedOrder = orderRepository.save(order);
+
+        // Add kit items to the order
+        for (Map.Entry<Long, Integer> entry : kitItems.entrySet()) {
+            Long kitId = entry.getKey();
+            Integer quantity = entry.getValue();
+
+            FoodKit foodKit = foodKitRepository.findById(kitId)
+                    .orElseThrow(() -> new RuntimeException("Food kit not found: " + kitId));
+
+            OrderKit orderKit = new OrderKit();
+            orderKit.setOrder(savedOrder);
+            orderKit.setFoodKit(foodKit);
+            orderKit.setKitQuantity(quantity);
+            orderKitRepository.save(orderKit);
+        }
+
+        // Schedule delivery
+        if (deliveryAddress != null) {
+            LocalDateTime deliveryDateTime = LocalDateTime.now().plusDays(1).with(deliveryTime);
+            deliveryService.scheduleDelivery(savedOrder, deliveryDateTime, deliveryAddress);
         }
 
         return savedOrder;
@@ -111,5 +168,87 @@ public class OrderService {
                 .orElseThrow(() -> new RuntimeException("Order not found"));
         order.setStatus(status);
         return orderRepository.save(order);
+    }
+
+    /**
+     * Calculate the next delivery date based on frequency
+     */
+    private LocalDateTime calculateNextDeliveryDate(LocalDateTime fromDate, Order.RecurringFrequency frequency) {
+        switch (frequency) {
+            case DAILY:
+                return fromDate.plusDays(1);
+            case WEEKLY:
+                return fromDate.plusWeeks(1);
+            case BIWEEKLY:
+                return fromDate.plusWeeks(2);
+            case MONTHLY:
+                return fromDate.plusMonths(1);
+            default:
+                return fromDate.plusDays(1);
+        }
+    }
+
+    /**
+     * Get recurring orders due for processing
+     */
+    public List<Order> getRecurringOrdersDueForProcessing(LocalDateTime targetDate) {
+        return orderRepository.findByIsRecurringTrueAndNextDeliveryDateBetween(
+                targetDate.toLocalDate().atStartOfDay(),
+                targetDate.toLocalDate().atTime(23, 59, 59));
+    }
+
+    /**
+     * Create a new instance of a recurring order
+     */
+    @Transactional
+    public Order createRecurringOrderInstance(Order parentOrder) {
+        // Create new order with same details
+        Order newOrder = new Order();
+        newOrder.setUser(parentOrder.getUser());
+        newOrder.setTotalPrice(parentOrder.getTotalPrice());
+        newOrder.setStatus(Order.OrderStatus.PENDING);
+        newOrder.setParentOrder(parentOrder);
+
+        Order savedOrder = orderRepository.save(newOrder);
+
+        // Copy kit items
+        List<OrderKit> parentKits = orderKitRepository.findByOrderId(parentOrder.getId());
+        for (OrderKit parentKit : parentKits) {
+            OrderKit newKit = new OrderKit();
+            newKit.setOrder(savedOrder);
+            newKit.setFoodKit(parentKit.getFoodKit());
+            newKit.setKitQuantity(parentKit.getKitQuantity());
+            orderKitRepository.save(newKit);
+        }
+
+        return savedOrder;
+    }
+
+    /**
+     * Update the next delivery date for a recurring order
+     */
+    @Transactional
+    public void updateNextDeliveryDate(Order order) {
+        if (!order.isRecurring()) {
+            return;
+        }
+
+        order.setNextDeliveryDate(calculateNextDeliveryDate(order.getNextDeliveryDate(),
+                order.getRecurringFrequency()));
+        orderRepository.save(order);
+    }
+
+    /**
+     * Get delivery address for an order
+     */
+    public Address getDeliveryAddress(Long orderId) {
+        // This would retrieve the delivery address from the most recent delivery
+        List<Delivery> deliveries = deliveryService.getOrderDeliveries(orderId);
+        if (!deliveries.isEmpty()) {
+            // Sort by ID descending to get latest
+            deliveries.sort((d1, d2) -> Long.compare(d2.getId(), d1.getId()));
+            return deliveries.get(0).getDeliveryAddress();
+        }
+        return null;
     }
 }

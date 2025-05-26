@@ -265,6 +265,39 @@ export const updateOrderStatus = (orderId, status) => {
   return api.put(`/orders/${orderId}/status`, { status });
 };
 
+// Delivery related APIs
+export const createOrderWithDelivery = (
+  userId,
+  kitItems,
+  totalPrice,
+  isRecurring,
+  recurringFrequency,
+  preferredDeliveryTime,
+  deliveryAddress
+) => {
+  return api.post("/orders/with-delivery", {
+    userId,
+    kitItems,
+    totalPrice,
+    isRecurring,
+    recurringFrequency,
+    preferredDeliveryTime,
+    deliveryAddress,
+  });
+};
+
+export const getUserDeliveries = (userId) => {
+  return api.get(`/orders/user/${userId}/deliveries`);
+};
+
+export const getOrderDeliveries = (orderId) => {
+  return api.get(`/deliveries/order/${orderId}`);
+};
+
+export const updateDeliveryStatus = (deliveryId, status) => {
+  return api.put(`/deliveries/${deliveryId}/status`, { status });
+};
+
 // Cart functions (using local storage)
 export const getCartItems = () => {
   try {

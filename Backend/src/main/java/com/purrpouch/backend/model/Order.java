@@ -7,6 +7,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Entity
 @Table(name = "orders")
@@ -29,7 +30,26 @@ public class Order {
 
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    // Recurring order fields
+    private boolean isRecurring = false;
+
+    @Enumerated(EnumType.STRING)
+    private RecurringFrequency recurringFrequency;
+
+    private LocalTime preferredDeliveryTime;
+
+    private LocalDateTime nextDeliveryDate;
+
+    // If this is a recurring instance, link to parent order
+    @ManyToOne
+    @JoinColumn(name = "parent_order_id")
+    private Order parentOrder;
+
     public enum OrderStatus {
         PENDING, PAID, FAILED, CANCELLED
+    }
+
+    public enum RecurringFrequency {
+        DAILY, WEEKLY, BIWEEKLY, MONTHLY
     }
 }

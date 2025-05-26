@@ -164,8 +164,17 @@ function Header() {
                 <circle cx="12" cy="7" r="4"></circle>
               </svg>
             </Link>
-          </div>          <div>
-            <Link to="/cart" style={{ color: "black", textDecoration: "none", position: "relative", display: "inline-block" }}>
+          </div>{" "}
+          <div>
+            <Link
+              to="/cart"
+              style={{
+                color: "black",
+                textDecoration: "none",
+                position: "relative",
+                display: "inline-block",
+              }}
+            >
               {/* Shopping Cart SVG Icon */}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -182,7 +191,7 @@ function Header() {
                 <circle cx="20" cy="21" r="1"></circle>
                 <path d="m1 1 4 4 13 2 1 8H7"></path>
               </svg>
-              
+
               {/* Red Badge Circle */}
               {cartItemCount > 0 && (
                 <span

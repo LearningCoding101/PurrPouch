@@ -7,6 +7,7 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.web.client.RestTemplate;
 
 @Configuration
 public class AppConfiguration {
@@ -23,5 +24,10 @@ public class AppConfiguration {
     public ChatModel chatModel(OpenAiApi openAiApi) {
         return new OpenAiChatModel(openAiApi,
                 OpenAiChatOptions.builder().model(OpenAiApi.ChatModel.GPT_4_O_MINI).build());
+    }
+
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
     }
 }

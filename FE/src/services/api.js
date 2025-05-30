@@ -265,6 +265,11 @@ export const updateOrderStatus = (orderId, status) => {
   return api.put(`/orders/${orderId}/status`, { status });
 };
 
+// Set payment UUID for VietQR tracking
+export const setPaymentUuid = (orderId, paymentUuid) => {
+  return api.put(`/orders/${orderId}/payment-uuid`, { paymentUuid });
+};
+
 // Delivery related APIs
 export const createOrderWithDelivery = (
   userId,

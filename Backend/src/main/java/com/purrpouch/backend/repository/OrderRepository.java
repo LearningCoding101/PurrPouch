@@ -15,9 +15,11 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByUserIdOrderByCreatedAtDesc(Long userId);
 
     // Query to find recurring orders
-    List<Order> findByIsRecurringTrue();
+    List<Order> findByIsRecurringTrue(); // Query to find recurring orders due for next delivery
 
-    // Query to find recurring orders due for next delivery
     List<Order> findByIsRecurringTrueAndNextDeliveryDateBetween(
             LocalDateTime start, LocalDateTime end);
+
+    // Query to find order by payment UUID
+    Order findByPaymentUuid(String paymentUuid);
 }

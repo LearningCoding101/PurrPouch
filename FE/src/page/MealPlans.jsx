@@ -664,10 +664,10 @@ function MealPlans() {
       };
 
       // Comment out the actual API call during development
-      // const response = await generateAiMealKit(id, chatHistory);
+      const response = await generateAiMealKit(id, chatHistory);
 
       // Use the mock response instead
-      const response = mockResponse;
+      // const response = mockResponse;
 
       if (response.data) {
         // In a real scenario, the API would return multiple meal kits
@@ -990,7 +990,7 @@ function MealPlans() {
   const handleAddToCart = async (mealPlanId) => {
     try {
       const quantity = mealKitQuantities[mealPlanId] || 1;
-      const price = mealKitPrices[mealPlanId] || 150000; // Default price if not set
+      const price = mealKitPrices[mealPlanId] || 10000; // Default price if not set
 
       // Find the selected kit
       const selectedKit = generatedMealKits.find(

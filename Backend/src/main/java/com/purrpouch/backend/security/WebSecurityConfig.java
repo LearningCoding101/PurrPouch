@@ -67,12 +67,21 @@ public class WebSecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173")); // Frontend origin
+        configuration.setAllowedOrigins(Arrays.asList("*")); // Allow all origins for webhooks
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setAllowCredentials(true);
+        configuration.setAllowCredentials(false); // Set to false when allowing all origins
+
+        // Special configuration for webhook endpoints - completely open
+        CorsConfiguration webhookConfiguration = new CorsConfiguration();
+        webhookConfiguration.setAllowedOrigins(Arrays.asList("*"));
+        webhookConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        webhookConfiguration.setAllowedHeaders(Arrays.asList("*"));
+        webhookConfiguration.setAllowCredentials(false);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration("/api/webhook/**", webhookConfiguration);
         return source;
     }
 
@@ -83,12 +92,18 @@ public class WebSecurityConfig {
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(auth -> auth
+                        // Webhook endpoints - completely open, no authentication required
+                        .requestMatchers("/api/webhook/**").permitAll()
+                        // Authentication endpoints
                         .requestMatchers("/api/auth/**").permitAll()
+                        // Test endpoints
                         .requestMatchers("/api/test/**").permitAll()
                         // Swagger UI endpoints
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        // All other requests require authentication
                         .anyRequest().authenticated())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()));
+
         http.authenticationProvider(authenticationProvider());
 
         // Add JWT filter first - it handles our app's JWT tokens

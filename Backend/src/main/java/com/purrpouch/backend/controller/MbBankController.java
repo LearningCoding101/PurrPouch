@@ -12,6 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.lang.InterruptedException;
+
 @RestController
 @RequestMapping("/api/banking")
 @CrossOrigin(origins = "*", maxAge = 3600)
@@ -30,13 +33,29 @@ public class MbBankController {
     })
     @GetMapping("/transactions")
     public ResponseEntity<String> getTransactionHistory(
-            @Parameter(description = "Account number", required = true) @RequestParam String accountNo,
 
             @Parameter(description = "Start date (format: dd/MM/yyyy)", required = true) @RequestParam String fromDate,
 
             @Parameter(description = "End date (format: dd/MM/yyyy)", required = true) @RequestParam String toDate) {
 
-        String response = mbBankService.getAccountTransactionHistory(accountNo, fromDate, toDate);
-        return ResponseEntity.ok(response);
+        try {
+            // Try the HttpClient implementation first (doesn't rely on curl)
+            String response = mbBankService.getAccountTransactionHistoryWithHttpClient(fromDate, toDate);
+            return ResponseEntity.ok(response);
+        } catch (IOException | InterruptedException e) {
+            // Log the error
+            e.printStackTrace();
+
+            try {
+                // Fall back to the original implementation if the new one fails
+                String response = mbBankService.getAccountTransactionHistory(fromDate, toDate);
+                return ResponseEntity.ok(response);
+            } catch (Exception fallbackError) {
+                // Log the fallback error
+                fallbackError.printStackTrace();
+                return ResponseEntity.status(500).body("Error processing request: " + e.getMessage() +
+                        "\nFallback error: " + fallbackError.getMessage());
+            }
+        }
     }
 }

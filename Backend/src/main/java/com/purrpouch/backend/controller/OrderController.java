@@ -76,6 +76,17 @@ public class OrderController {
     }
 
     /**
+     * Set payment UUID for VietQR payment tracking
+     */
+    @PutMapping("/{orderId}/payment-uuid")
+    public ResponseEntity<?> setPaymentUuid(
+            @PathVariable Long orderId,
+            @RequestBody SetPaymentUuidRequest request) {
+        Order order = orderService.setPaymentUuid(orderId, request.getPaymentUuid());
+        return ResponseEntity.ok(order);
+    }
+
+    /**
      * Create a new order with delivery options
      */
     @PostMapping("/with-delivery")
@@ -180,6 +191,18 @@ public class OrderController {
 
         public void setDeliveryAddress(Address deliveryAddress) {
             this.deliveryAddress = deliveryAddress;
+        }
+    }
+
+    public static class SetPaymentUuidRequest {
+        private String paymentUuid;
+
+        public String getPaymentUuid() {
+            return paymentUuid;
+        }
+
+        public void setPaymentUuid(String paymentUuid) {
+            this.paymentUuid = paymentUuid;
         }
     }
 }

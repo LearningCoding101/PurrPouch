@@ -22,13 +22,15 @@ public class Order {
     @ManyToOne(optional = false)
     @JoinColumn(name = "user_id")
     private User user;
-
     private BigDecimal totalPrice;
 
     @Enumerated(EnumType.STRING)
     private OrderStatus status = OrderStatus.PENDING;
 
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    // Payment UUID for VietQR payment tracking
+    private String paymentUuid;
 
     // Recurring order fields
     private boolean isRecurring = false;

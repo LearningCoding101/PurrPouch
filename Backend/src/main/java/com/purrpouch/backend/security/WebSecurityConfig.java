@@ -66,22 +66,36 @@ public class WebSecurityConfig {
 
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
+        // General configuration for API endpoints
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("*")); // Allow all origins for webhooks
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://localhost:3000")); // Specify
+                                                                                                          // exact
+                                                                                                          // origins
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setAllowCredentials(false); // Set to false when allowing all origins
+        configuration.setAllowCredentials(true); // Now we can use credentials with specific origins
 
-        // Special configuration for webhook endpoints - completely open
+        // Configuration for webhook endpoints - no credentials needed
         CorsConfiguration webhookConfiguration = new CorsConfiguration();
         webhookConfiguration.setAllowedOrigins(Arrays.asList("*"));
         webhookConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         webhookConfiguration.setAllowedHeaders(Arrays.asList("*"));
-        webhookConfiguration.setAllowCredentials(false);
+        webhookConfiguration.setAllowCredentials(false); // No credentials for webhooks
+
+        // Special configuration for WebSocket endpoints
+        CorsConfiguration wsConfiguration = new CorsConfiguration();
+        wsConfiguration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://localhost:3000"));
+        wsConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        wsConfiguration.setAllowedHeaders(Arrays.asList("*"));
+        wsConfiguration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        // Register WebSocket config first (more specific)
+        source.registerCorsConfiguration("/ws/**", wsConfiguration);
         source.registerCorsConfiguration("/api/webhook/**", webhookConfiguration);
+        // Register general config last (less specific)
+        source.registerCorsConfiguration("/api/**", configuration);
+
         return source;
     }
 
@@ -94,10 +108,13 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Webhook endpoints - completely open, no authentication required
                         .requestMatchers("/api/webhook/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
                         // Authentication endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         // Test endpoints
                         .requestMatchers("/api/test/**").permitAll()
+                        // WebSocket endpoints - allow for initial connection
+                        .requestMatchers("/ws/**").permitAll()
                         // Swagger UI endpoints
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         // All other requests require authentication

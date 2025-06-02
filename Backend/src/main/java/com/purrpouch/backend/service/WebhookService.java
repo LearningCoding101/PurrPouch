@@ -24,6 +24,9 @@ public class WebhookService {
     @Autowired
     private OrderService orderService;
 
+    @Autowired
+    private PaymentNotificationService paymentNotificationService;
+
     /**
      * Process VietQR payment webhook notification
      * Also handles Pay2S webhook format (same structure)
@@ -65,9 +68,12 @@ public class WebhookService {
                 logger.info("Order lookup result for UUID '{}': {}", uuid,
                         order != null ? "Order ID " + order.getId() + " (Status: " + order.getStatus() + ")"
                                 : "Not found");
-
                 if (order != null && order.getStatus() == Order.OrderStatus.PENDING) {
                     orderService.updateOrderStatus(order.getId(), Order.OrderStatus.PAID);
+
+                    // Send WebSocket notification of payment update
+                    paymentNotificationService.sendPaymentStatusUpdate(order.getId(), "PAID");
+
                     // // Verify payment amount matches order total
                     // if (order.getTotalPrice().doubleValue()) {
                     // // Update order status to PAID

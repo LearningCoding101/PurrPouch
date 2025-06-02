@@ -13,6 +13,7 @@ public class Address {
     private String streetAddress;
     private String city;
     private String district;
+    private String ward;
     private String postalCode;
     private String additionalInfo;
 }

@@ -39,13 +39,17 @@ public class Order {
     private RecurringFrequency recurringFrequency;
 
     private LocalTime preferredDeliveryTime;
-
     private LocalDateTime nextDeliveryDate;
 
     // If this is a recurring instance, link to parent order
     @ManyToOne
     @JoinColumn(name = "parent_order_id")
     private Order parentOrder;
+
+    // Delivery address reference
+    @ManyToOne
+    @JoinColumn(name = "delivery_address_id")
+    private UserAddress deliveryAddress;
 
     public enum OrderStatus {
         PENDING, PAID, FAILED, CANCELLED

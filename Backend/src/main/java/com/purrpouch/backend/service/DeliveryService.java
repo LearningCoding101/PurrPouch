@@ -3,12 +3,11 @@ package com.purrpouch.backend.service;
 import com.purrpouch.backend.event.OrderEvent;
 import com.purrpouch.backend.model.Delivery;
 import com.purrpouch.backend.model.Order;
-import com.purrpouch.backend.model.Address;
+import com.purrpouch.backend.model.UserAddress;
 import com.purrpouch.backend.repository.DeliveryRepository;
 import com.purrpouch.backend.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,12 +26,12 @@ public class DeliveryService {
      * Schedule a delivery for an order
      */
     @Transactional
-    public Delivery scheduleDelivery(Order order, LocalDateTime deliveryTime, Address address) {
+    public Delivery scheduleDelivery(Order order, LocalDateTime deliveryTime, UserAddress address) {
         Delivery delivery = new Delivery();
         delivery.setOrder(order);
         delivery.setScheduledTime(deliveryTime);
         delivery.setStatus(Delivery.DeliveryStatus.PENDING);
-        delivery.setDeliveryAddress(address);
+        delivery.setDeliveryAddress(address.toAddress());
 
         return deliveryRepository.save(delivery);
     }
@@ -106,13 +105,9 @@ public class DeliveryService {
         if (event.getEventType() == OrderEvent.OrderEventType.CREATED) {
             Order order = event.getOrder();
             // If the order has delivery time info, schedule a delivery
-            if (order.getPreferredDeliveryTime() != null) {
-                // For simplicity, we'll use a default address for now
-                // In a real application, you would retrieve the address from the user's profile
-                Address deliveryAddress = new Address();
-                deliveryAddress.setStreetAddress("Default Address");
-                deliveryAddress.setCity("Default City");
-                deliveryAddress.setDistrict("Default District");
+            if (order.getPreferredDeliveryTime() != null && order.getDeliveryAddress() != null) {
+                // Schedule delivery with the order's delivery address
+                UserAddress userAddress = order.getDeliveryAddress();
 
                 // Schedule delivery for the next day if nextDeliveryDate is not set
                 LocalDateTime deliveryTime;
@@ -131,7 +126,7 @@ public class DeliveryService {
                             .withNano(0);
                 }
 
-                scheduleDelivery(order, deliveryTime, deliveryAddress);
+                scheduleDelivery(order, deliveryTime, userAddress);
             }
         }
     }

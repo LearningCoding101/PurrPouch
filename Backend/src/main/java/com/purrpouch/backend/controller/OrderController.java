@@ -1,6 +1,5 @@
 package com.purrpouch.backend.controller;
 
-import com.purrpouch.backend.model.Address;
 import com.purrpouch.backend.model.Delivery;
 import com.purrpouch.backend.model.Order;
 import com.purrpouch.backend.model.OrderKit;
@@ -91,14 +90,14 @@ public class OrderController {
      */
     @PostMapping("/with-delivery")
     public ResponseEntity<?> createOrderWithDelivery(@RequestBody CreateOrderWithDeliveryRequest request) {
-        Order order = orderService.createOrder(
+        Order order = orderService.createOrderWithDeliveryAddress(
                 request.getUserId(),
                 request.getKitItems(),
                 request.getTotalPrice(),
                 request.isRecurring(),
                 request.getRecurringFrequency(),
                 request.getPreferredDeliveryTime(),
-                request.getDeliveryAddress());
+                request.getDeliveryAddressId());
         return ResponseEntity.ok(order);
     }
 
@@ -158,7 +157,7 @@ public class OrderController {
         private boolean isRecurring;
         private Order.RecurringFrequency recurringFrequency;
         private LocalTime preferredDeliveryTime;
-        private Address deliveryAddress;
+        private Long deliveryAddressId;
 
         // Getters and setters
         public boolean isRecurring() {
@@ -185,12 +184,12 @@ public class OrderController {
             this.preferredDeliveryTime = preferredDeliveryTime;
         }
 
-        public Address getDeliveryAddress() {
-            return deliveryAddress;
+        public Long getDeliveryAddressId() {
+            return deliveryAddressId;
         }
 
-        public void setDeliveryAddress(Address deliveryAddress) {
-            this.deliveryAddress = deliveryAddress;
+        public void setDeliveryAddressId(Long deliveryAddressId) {
+            this.deliveryAddressId = deliveryAddressId;
         }
     }
 

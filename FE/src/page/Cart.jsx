@@ -6,11 +6,14 @@ import {
   updateCartItemQuantity,
   clearCart,
   createOrder,
+  createOrderWithDelivery,
   getUserInfo,
   setPaymentUuid,
   getOrderById,
 } from "../services/api";
 import PageWrapper from "../component/global/PageWrapper";
+import AddressManager from "../component/address/AddressManager";
+import webSocketService from "../services/websocket";
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -24,6 +27,7 @@ const Cart = () => {
   const [paymentPolling, setPaymentPolling] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState("pending"); // 'pending', 'checking', 'completed', 'timeout'
   const [paymentTimeout, setPaymentTimeout] = useState(null);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
   const navigate = useNavigate();
   // Generate UUID for payment reference (without dashes for VietQR compatibility)
   const generateUUID = () => {
@@ -82,6 +86,11 @@ const Cart = () => {
       return;
     }
 
+    if (!selectedAddressId) {
+      setError("Please select a delivery address before proceeding");
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -98,8 +107,16 @@ const Cart = () => {
         0
       );
 
-      // Create order with PENDING status
-      const orderResponse = await createOrder(user.id, kitItems, totalPrice);
+      // Create order with PENDING status and delivery address
+      const orderResponse = await createOrderWithDelivery(
+        user.id,
+        kitItems,
+        totalPrice,
+        false, // not recurring
+        null, // no recurring frequency
+        null, // no preferred delivery time for now
+        selectedAddressId // selected delivery address ID
+      );
       setOrderCreated(orderResponse.data);
 
       // Show VietQR and start payment polling
@@ -123,7 +140,7 @@ const Cart = () => {
     setShowVietQR(false);
   };
   const handleBackToCart = () => {
-    stopPaymentPolling();
+    stopPaymentTracking();
     setShowVietQR(false);
     setOrderCreated(null);
     setPaymentUuidState(null);
@@ -135,10 +152,8 @@ const Cart = () => {
 
   const handleViewOrders = () => {
     navigate("/orders");
-  };
-
-  // Start payment polling
-  const startPaymentPolling = async (orderId, uuid) => {
+  }; // Start payment tracking with WebSocket
+  const startPaymentTracking = async (orderId, uuid) => {
     try {
       // Set payment UUID for the order
       await setPaymentUuid(orderId, uuid);
@@ -154,43 +169,48 @@ const Cart = () => {
 
       setPaymentTimeout(timeoutId);
 
-      // Poll every 5 seconds
-      const pollInterval = setInterval(async () => {
-        try {
-          const response = await getOrderById(orderId);
-          const order = response.data;
+      // Subscribe to WebSocket notifications for this specific order
+      try {
+        webSocketService.subscribeToOrderPayment(orderId, (data) => {
+          console.log("Received payment update:", data);
 
-          if (order.status === "PAID") {
-            clearInterval(pollInterval);
+          if (data && data.status === "PAID") {
             clearTimeout(timeoutId);
             setPaymentStatus("completed");
             setPaymentPolling(false);
             handlePaymentComplete();
           }
-        } catch (error) {
-          console.error("Error checking payment status:", error);
-        }
-      }, 5000); // Check every 5 seconds
-
-      // Clean up on unmount
-      return () => {
-        clearInterval(pollInterval);
-        clearTimeout(timeoutId);
-      };
+        });
+        console.log(`WebSocket subscription started for order ${orderId}`);
+      } catch (wsError) {
+        // If WebSocket fails, we'll fall back to polling as a backup
+        console.error("WebSocket subscription error:", wsError);
+        // Implement a fallback notification or alert
+        setError(
+          "Payment tracking via WebSocket failed. Status updates may be delayed."
+        );
+      }
     } catch (error) {
-      console.error("Error starting payment polling:", error);
+      console.error("Error starting payment tracking:", error);
       setPaymentPolling(false);
       setError("Failed to initialize payment tracking");
     }
   };
 
-  // Stop payment polling
-  const stopPaymentPolling = () => {
+  // Stop payment tracking with WebSocket
+  const stopPaymentTracking = () => {
     setPaymentPolling(false);
     setPaymentStatus("pending");
+
+    // Clear timeout if exists
     if (paymentTimeout) {
       clearTimeout(paymentTimeout);
       setPaymentTimeout(null);
+    }
+
+    // Unsubscribe from WebSocket if order exists
+    if (orderCreated) {
+      webSocketService.unsubscribe(`/topic/payment/${orderCreated.id}`);
     }
   };
 
@@ -200,11 +220,10 @@ const Cart = () => {
       if (paymentTimeout) {
         clearTimeout(paymentTimeout);
       }
-      stopPaymentPolling();
+      stopPaymentTracking();
     };
   }, []);
-
-  // Auto-start payment polling when order and UUID are ready
+  // Auto-start payment tracking when order and UUID are ready
   useEffect(() => {
     if (
       orderCreated &&
@@ -212,7 +231,7 @@ const Cart = () => {
       showVietQR &&
       paymentStatus === "pending"
     ) {
-      startPaymentPolling(orderCreated.id, paymentUuid);
+      startPaymentTracking(orderCreated.id, paymentUuid);
     }
   }, [orderCreated, paymentUuid, showVietQR]);
 
@@ -345,6 +364,7 @@ const Cart = () => {
                     gap: "1.5rem",
                   }}
                 >
+                  {" "}
                   {/* Left Column */}
                   <div
                     style={{
@@ -354,57 +374,14 @@ const Cart = () => {
                     }}
                   >
                     {/* Delivery Information Section */}
-                    <div
-                      style={{
-                        backgroundColor: "white",
-                        padding: "16px 20px",
-                        borderRadius: "8px",
-                        boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          cursor: "pointer",
-                        }}
-                      >
-                        <div style={{ display: "flex", alignItems: "center" }}>
-                          <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="#6C757D"
-                            strokeWidth="2"
-                            style={{ marginRight: "10px" }}
-                          >
-                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                            <circle cx="12" cy="10" r="3" />
-                          </svg>
-                          <span
-                            style={{
-                              fontSize: "16px",
-                              fontWeight: "600",
-                              color: "#333333",
-                            }}
-                          >
-                            Delivery information
-                          </span>
-                        </div>
-                        <svg
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="#6C757D"
-                          strokeWidth="2"
-                        >
-                          <polyline points="6,9 12,15 18,9" />
-                        </svg>
-                      </div>
-                    </div>
+                    <AddressManager
+                      onSelectAddress={(addressId) =>
+                        setSelectedAddressId(addressId)
+                      }
+                      selectedAddressId={selectedAddressId}
+                      isCollapsible={true}
+                      isSelectable={true}
+                    />
 
                     {/* Apply Coupons Section */}
                     <div
@@ -666,7 +643,6 @@ const Cart = () => {
                       Usage Instruction
                     </button>
                   </div>
-
                   {/* Right Column */}
                   <div
                     style={{
@@ -772,13 +748,13 @@ const Cart = () => {
                               opacity: paymentStatus === "completed" ? 0.5 : 1,
                             }}
                             onLoad={(e) => {
-                              // Start payment polling when QR code is loaded and we have both UUID and order
+                              // Start payment tracking when QR code is loaded and we have both UUID and order
                               if (
                                 paymentUuid &&
                                 orderCreated &&
                                 paymentStatus === "pending"
                               ) {
-                                startPaymentPolling(
+                                startPaymentTracking(
                                   orderCreated.id,
                                   paymentUuid
                                 );
@@ -858,7 +834,7 @@ const Cart = () => {
                               setPaymentStatus("pending");
                               const newUuid = generateUUID();
                               setPaymentUuidState(newUuid);
-                              startPaymentPolling(orderCreated.id, newUuid);
+                              startPaymentTracking(orderCreated.id, newUuid);
                             }}
                             style={{
                               backgroundColor: "#FF5722",

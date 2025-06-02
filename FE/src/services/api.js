@@ -241,11 +241,12 @@ export const getMealKitsForCat = (catId) => {
 };
 
 // Order related APIs
-export const createOrder = (userId, kitItems, totalPrice) => {
+export const createOrder = (userId, kitItems, totalPrice, addressId) => {
   return api.post("/orders", {
     userId,
     kitItems,
     totalPrice,
+    addressId,
   });
 };
 
@@ -278,7 +279,7 @@ export const createOrderWithDelivery = (
   isRecurring,
   recurringFrequency,
   preferredDeliveryTime,
-  deliveryAddress
+  deliveryAddressId
 ) => {
   return api.post("/orders/with-delivery", {
     userId,
@@ -287,7 +288,7 @@ export const createOrderWithDelivery = (
     isRecurring,
     recurringFrequency,
     preferredDeliveryTime,
-    deliveryAddress,
+    deliveryAddressId,
   });
 };
 
@@ -394,3 +395,28 @@ export const clearCart = () => {
 };
 
 export default api;
+
+// User Address Management
+export const getUserAddresses = () => {
+  return api.get("/user-addresses");
+};
+
+export const getUserAddressById = (addressId) => {
+  return api.get(`/user-addresses/${addressId}`);
+};
+
+export const createUserAddress = (addressData) => {
+  return api.post("/user-addresses", addressData);
+};
+
+export const updateUserAddress = (addressId, addressData) => {
+  return api.put(`/user-addresses/${addressId}`, addressData);
+};
+
+export const deleteUserAddress = (addressId) => {
+  return api.delete(`/user-addresses/${addressId}`);
+};
+
+export const setDefaultUserAddress = (addressId) => {
+  return api.put(`/user-addresses/${addressId}/set-default`);
+};

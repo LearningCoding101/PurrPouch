@@ -559,15 +559,24 @@ function MealPlans() {
       meal.foodItems.forEach((item) => {
         // Find the matching SKU in our foodSkus array
         const skuInfo = foodSkus.find((sku) => sku.id === item.foodSkuId);
-        if (skuInfo && skuInfo.price) {
-          price += skuInfo.price * item.quantity;
+        if (skuInfo) {
+          // Try to use pricePerUnit from the backend, fallback to price if it exists
+          const itemPrice = skuInfo.pricePerUnit || skuInfo.price;
+          if (itemPrice) {
+            price += itemPrice * item.quantity;
+          }
         }
       });
     });
 
     // If no price information is found, set a default price
     if (price === 0) {
-      price = 150000; // Default price if no SKU prices are available
+      // Calculate a price based on the number of food items as fallback
+      const totalItems = mealKit.meals.reduce(
+        (sum, meal) => sum + meal.foodItems.length,
+        0
+      );
+      price = totalItems * 30000; // Approximate 30,000 per food item
     }
 
     // Multiply by quantity
@@ -661,10 +670,8 @@ function MealPlans() {
             },
           ],
         },
-      };
-
-      // Comment out the actual API call during development
-      const response = await generateAiMealKit(id, chatHistory);
+      }; // Comment out the actual API call during development
+      const response = await generateAiMealKit(id, chatMessages);
 
       // Use the mock response instead
       // const response = mockResponse;

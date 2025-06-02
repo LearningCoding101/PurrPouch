@@ -5,6 +5,7 @@ import com.purrpouch.backend.repository.FoodKitRepository;
 import com.purrpouch.backend.repository.OrderKitRepository;
 import com.purrpouch.backend.repository.OrderRepository;
 import com.purrpouch.backend.repository.UserRepository;
+import com.purrpouch.backend.repository.UserAddressRepository;
 import com.purrpouch.backend.event.OrderEvent;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,8 +32,17 @@ public class OrderService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private UserAddressRepository userAddressRepository;
     @Autowired
     private ApplicationEventPublisher eventPublisher;
+
+    @Autowired
+    private UserAddressService userAddressService;
+
+    @Autowired
+    private PaymentNotificationService paymentNotificationService;
 
     /**
      * Create a new order with the provided meal kits
@@ -74,20 +84,25 @@ public class OrderService {
     }
 
     /**
-     * Create a new order with the provided meal kits, with recurring options
+     * Create a new order with the provided meal kits, with recurring options and
+     * delivery address ID
      */
     @Transactional
-    public Order createOrder(Long userId, Map<Long, Integer> kitItems, BigDecimal totalPrice,
+    public Order createOrderWithDeliveryAddress(Long userId, Map<Long, Integer> kitItems, BigDecimal totalPrice,
             boolean isRecurring, Order.RecurringFrequency frequency, LocalTime deliveryTime,
-            Address deliveryAddress) {
+            Long deliveryAddressId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Retrieve the UserAddress
+        UserAddress userAddress = userAddressService.getAddressById(userId, deliveryAddressId);
 
         // Create the order
         Order order = new Order();
         order.setUser(user);
         order.setTotalPrice(totalPrice);
         order.setStatus(Order.OrderStatus.PENDING);
+        order.setDeliveryAddress(userAddress); // Set the delivery address reference
 
         // Set recurring details if applicable
         if (isRecurring) {
@@ -100,7 +115,9 @@ public class OrderService {
             order.setNextDeliveryDate(nextDelivery);
         }
 
-        Order savedOrder = orderRepository.save(order); // Add kit items to the order
+        Order savedOrder = orderRepository.save(order);
+
+        // Add kit items to the order
         for (Map.Entry<Long, Integer> entry : kitItems.entrySet()) {
             Long kitId = entry.getKey();
             Integer quantity = entry.getValue();
@@ -164,7 +181,14 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
         order.setStatus(status);
-        return orderRepository.save(order);
+
+        // Save the order with updated status
+        Order updatedOrder = orderRepository.save(order);
+
+        // Send WebSocket notification about the status change
+        paymentNotificationService.sendPaymentStatusUpdate(orderId, status.toString());
+
+        return updatedOrder;
     }
 
     /**
@@ -214,16 +238,16 @@ public class OrderService {
      */
     @Transactional
     public Order createRecurringOrderInstance(Order parentOrder) {
-        // Create new order with same details
+        // Create a new order based on the parent
         Order newOrder = new Order();
         newOrder.setUser(parentOrder.getUser());
         newOrder.setTotalPrice(parentOrder.getTotalPrice());
         newOrder.setStatus(Order.OrderStatus.PENDING);
+        newOrder.setRecurring(false); // This is a one-time instance
         newOrder.setParentOrder(parentOrder);
-
         Order savedOrder = orderRepository.save(newOrder);
 
-        // Copy kit items
+        // Copy the kit items
         List<OrderKit> parentKits = orderKitRepository.findByOrderId(parentOrder.getId());
         for (OrderKit parentKit : parentKits) {
             OrderKit newKit = new OrderKit();

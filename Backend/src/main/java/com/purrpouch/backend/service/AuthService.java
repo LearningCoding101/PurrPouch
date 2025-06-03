@@ -166,4 +166,70 @@ public class AuthService {
 
         return userRepository.save(newUser);
     }
+
+    /**
+     * Check if a user exists with the given phone number
+     * 
+     * @param phoneNumber The phone number to check
+     * @return true if a user exists with this phone number
+     */
+    public boolean existsByPhoneNumber(String phoneNumber) {
+        return userRepository.existsByPhoneNumber(phoneNumber);
+    }
+
+    /**
+     * Reset password for a user identified by phone number
+     * 
+     * @param phoneNumber The phone number
+     * @param newPassword The new password
+     * @return The updated user
+     * @throws IllegalArgumentException if no user found with the phone number
+     */
+    public User resetPasswordByPhoneNumber(String phoneNumber, String newPassword) {
+        Optional<User> userOptional = userRepository.findByPhoneNumber(phoneNumber);
+
+        if (userOptional.isEmpty()) {
+            throw new IllegalArgumentException("No user found with this phone number");
+        }
+
+        User user = userOptional.get();
+        user.setPassword(passwordEncoder.encode(newPassword));
+
+        return userRepository.save(user);
+    }
+
+    /**
+     * Register a new user with phone number
+     * 
+     * @param username    Username
+     * @param phoneNumber Phone number (must be verified)
+     * @param password    Password
+     * @param firebaseUid Firebase UID (optional)
+     * @return The created user
+     * @throws IllegalArgumentException if username or phone number is already in
+     *                                  use
+     */
+    public User registerUserWithPhone(String username, String phoneNumber, String password, String firebaseUid) {
+        // Check if username is already in use
+        if (userRepository.existsByUsername(username)) {
+            throw new IllegalArgumentException("Error: Username is already taken!");
+        }
+
+        // Check if phone number is already in use
+        if (userRepository.existsByPhoneNumber(phoneNumber)) {
+            throw new IllegalArgumentException("Error: Phone number is already in use!");
+        }
+
+        // Create user with phone number
+        User user = new User();
+        user.setUsername(username);
+        user.setPhoneNumber(phoneNumber);
+        user.setEmail(username + "@placeholder.com"); // Temporary email
+        user.setPassword(passwordEncoder.encode(password));
+        user.setFirebaseUid(firebaseUid);
+        user.setRole(User.Role.CUSTOMER);
+        user.setEnabled(true);
+
+        return userRepository.save(user);
+    }
 }

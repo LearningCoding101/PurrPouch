@@ -19,4 +19,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Boolean existsByEmail(String email);
 
     Boolean existsByFirebaseUid(String firebaseUid);
+
+    Optional<User> findByPhoneNumber(String phoneNumber);
+
+    Boolean existsByPhoneNumber(String phoneNumber);
+
+    Boolean existsByRole(User.Role role);
+
+    Long countByRoleAndEnabled(User.Role role, Boolean enabled);
 }

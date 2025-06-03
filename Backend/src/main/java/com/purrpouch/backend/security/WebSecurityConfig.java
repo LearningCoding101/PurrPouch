@@ -93,6 +93,7 @@ public class WebSecurityConfig {
         // Register WebSocket config first (more specific)
         source.registerCorsConfiguration("/ws/**", wsConfiguration);
         source.registerCorsConfiguration("/api/webhook/**", webhookConfiguration);
+
         // Register general config last (less specific)
         source.registerCorsConfiguration("/api/**", configuration);
 
@@ -115,6 +116,7 @@ public class WebSecurityConfig {
                         .requestMatchers("/api/test/**").permitAll()
                         // WebSocket endpoints - allow for initial connection
                         .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers("/api/admin/create-default-admin").permitAll()
                         // Swagger UI endpoints
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         // All other requests require authentication

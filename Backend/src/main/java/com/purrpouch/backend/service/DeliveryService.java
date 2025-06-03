@@ -8,6 +8,8 @@ import com.purrpouch.backend.repository.DeliveryRepository;
 import com.purrpouch.backend.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -129,5 +131,66 @@ public class DeliveryService {
                 scheduleDelivery(order, deliveryTime, userAddress);
             }
         }
+    }
+
+    /**
+     * Admin method: Get all deliveries for admin panel
+     */
+    public List<Delivery> getAllDeliveriesForAdmin() {
+        return deliveryRepository.findAll();
+    }
+
+    /**
+     * Admin method: Get all deliveries for admin panel with pagination and
+     * filtering
+     */
+    public Page<Delivery> getAllDeliveriesForAdmin(Pageable pageable, String status) {
+        if (status != null && !status.isEmpty()) {
+            try {
+                // Just validate the status is valid, but use basic pagination for now
+                Delivery.DeliveryStatus.valueOf(status);
+                // Using basic pagination for now, can add dedicated repository method later
+                return deliveryRepository.findAll(pageable);
+            } catch (IllegalArgumentException e) {
+                // Invalid status, return all deliveries
+                return deliveryRepository.findAll(pageable);
+            }
+        }
+        return deliveryRepository.findAll(pageable);
+    }
+
+    /**
+     * Admin method: Update delivery status by admin
+     */
+    @Transactional
+    public Delivery updateDeliveryStatusByAdmin(Long deliveryId, Delivery.DeliveryStatus newStatus) {
+        Delivery delivery = deliveryRepository.findById(deliveryId)
+                .orElseThrow(() -> new RuntimeException("Delivery not found with id: " + deliveryId));
+
+        delivery.setStatus(newStatus);
+
+        if (newStatus == Delivery.DeliveryStatus.DELIVERED) {
+            delivery.setDeliveredTime(LocalDateTime.now());
+        }
+
+        return deliveryRepository.save(delivery);
+    }
+
+    /**
+     * Admin method: Get deliveries by status for admin panel
+     */
+    public List<Delivery> getDeliveriesByStatusForAdmin(Delivery.DeliveryStatus status) {
+        return deliveryRepository.findAll().stream()
+                .filter(delivery -> delivery.getStatus().equals(status))
+                .toList();
+    }
+
+    /**
+     * Admin method: Get deliveries by order for admin panel
+     */
+    public List<Delivery> getDeliveriesByOrderForAdmin(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
+        return deliveryRepository.findByOrder(order);
     }
 }

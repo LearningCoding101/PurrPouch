@@ -25,6 +25,13 @@ import {
   CustomerGuard,
   GuestGuard,
 } from "./services/routing";
+// Admin components
+import AdminLayout from "./component/admin/AdminLayout";
+import AdminDashboard from "./component/admin/Dashboard";
+import AdminOrders from "./component/admin/Orders";
+import AdminDeliveries from "./component/admin/Deliveries";
+import AdminCustomers from "./component/admin/Customers";
+import AdminSettings from "./component/admin/Settings";
 // Header and Footer are now used in the PageWrapper component
 import FontStyles from "./theme/FontStyles";
 import LogoExamplePage from "./page/LogoExamplePage";
@@ -98,7 +105,17 @@ function App() {
 
               {/* Admin only routes */}
               <Route element={<AdminGuard />}>
-                <Route path="/admin" element={<AdminPanel />} />
+                <Route path="/admin/*" element={<AdminLayout />}>
+                  <Route path="dashboard" element={<AdminDashboard />} />
+                  <Route path="orders" element={<AdminOrders />} />
+                  <Route path="deliveries" element={<AdminDeliveries />} />
+                  <Route path="customers" element={<AdminCustomers />} />
+                  <Route path="settings" element={<AdminSettings />} />
+                  <Route
+                    index
+                    element={<Navigate to="/admin/dashboard" replace />}
+                  />
+                </Route>
               </Route>
 
               {/* Staff and Admin routes */}

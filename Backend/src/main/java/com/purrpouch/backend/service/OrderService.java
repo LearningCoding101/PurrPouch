@@ -1,21 +1,23 @@
 package com.purrpouch.backend.service;
 
 import com.purrpouch.backend.model.*;
+import com.purrpouch.backend.model.Order.OrderStatus;
 import com.purrpouch.backend.repository.FoodKitRepository;
 import com.purrpouch.backend.repository.OrderKitRepository;
 import com.purrpouch.backend.repository.OrderRepository;
 import com.purrpouch.backend.repository.UserRepository;
-import com.purrpouch.backend.repository.UserAddressRepository;
 import com.purrpouch.backend.event.OrderEvent;
+import com.purrpouch.backend.event.OrderEvent.OrderEventType;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -29,12 +31,9 @@ public class OrderService {
 
     @Autowired
     private FoodKitRepository foodKitRepository;
-
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private UserAddressRepository userAddressRepository;
     @Autowired
     private ApplicationEventPublisher eventPublisher;
 
@@ -294,5 +293,69 @@ public class OrderService {
         // return deliveries.get(0).getDeliveryAddress();
         // }
         // return null;
+    }
+
+    /**
+     * Admin method: Get all orders for admin panel with pagination and filtering
+     */
+    public List<Order> getAllOrdersForAdmin() {
+        return orderRepository.findAll();
+    }
+
+    /**
+     * Admin method: Get all orders for admin panel with pagination and filtering
+     */
+    public Page<Order> getAllOrdersForAdmin(Pageable pageable, String status) {
+        if (status != null && !status.isEmpty()) {
+            try {
+                // Just validate the status is valid, but use basic pagination for now
+                OrderStatus.valueOf(status);
+                return orderRepository.findAll(pageable);
+            } catch (IllegalArgumentException e) {
+                // Invalid status, return all orders
+                return orderRepository.findAll(pageable);
+            }
+        }
+        return orderRepository.findAll(pageable);
+    }
+
+    /**
+     * Admin method: Get detailed order information for admin panel
+     */
+    public Order getOrderDetailsForAdmin(Long orderId) {
+        return orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
+    }
+
+    /**
+     * Admin method: Update order status by admin
+     */
+    @Transactional
+    public Order updateOrderStatusByAdmin(Long orderId, OrderStatus newStatus) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
+        order.setStatus(newStatus);
+
+        Order savedOrder = orderRepository.save(order);
+        // Publish order status change event for notifications
+        eventPublisher.publishEvent(new OrderEvent(this, savedOrder, OrderEventType.UPDATED));
+
+        return savedOrder;
+    }
+
+    /**
+     * Admin method: Get orders by status for admin panel
+     */
+    public List<Order> getOrdersByStatusForAdmin(OrderStatus status) {
+        return orderRepository.findAll().stream()
+                .filter(order -> order.getStatus().equals(status))
+                .toList();
+    }
+
+    /**
+     * Admin method: Get orders by user for admin panel
+     */
+    public List<Order> getOrdersByUserForAdmin(Long userId) {
+        return orderRepository.findByUserIdOrderByCreatedAtDesc(userId);
     }
 }

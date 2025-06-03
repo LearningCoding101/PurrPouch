@@ -27,9 +27,13 @@ public class User {
 
     @Column(nullable = true) // Password is optional for Firebase auth
     private String password;
-
     @Column(unique = true)
-    private String firebaseUid;    @Enumerated(EnumType.STRING)
+    private String firebaseUid;
+
+    @Column(unique = true, nullable = true)
+    private String phoneNumber;
+
+    @Enumerated(EnumType.STRING)
     private Role role = Role.CUSTOMER; // Default role is now CUSTOMER
 
     private boolean enabled = true;

@@ -8,7 +8,7 @@ import { signOut } from "firebase/auth";
 import { getCartItems } from "../../services/api";
 
 function Header() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [cartItemCount, setCartItemCount] = useState(0);
 
